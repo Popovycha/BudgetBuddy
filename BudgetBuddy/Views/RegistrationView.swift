@@ -79,6 +79,7 @@ struct RegistrationView: View {
                                     RoundedRectangle(cornerRadius: 8)
                                         .stroke(Color(red: 0.90, green: 0.85, blue: 0.82), lineWidth: 1)
                                 )
+                                .submitLabel(.next)
                         }
                         
                         // Last name field
@@ -96,6 +97,7 @@ struct RegistrationView: View {
                                     RoundedRectangle(cornerRadius: 8)
                                         .stroke(Color(red: 0.90, green: 0.85, blue: 0.82), lineWidth: 1)
                                 )
+                                .submitLabel(.next)
                         }
                         
                         // Email field
@@ -115,6 +117,7 @@ struct RegistrationView: View {
                                     RoundedRectangle(cornerRadius: 8)
                                         .stroke(Color(red: 0.90, green: 0.85, blue: 0.82), lineWidth: 1)
                                 )
+                                .submitLabel(.next)
                         }
                         
                         // Password field
@@ -132,6 +135,7 @@ struct RegistrationView: View {
                                     RoundedRectangle(cornerRadius: 8)
                                         .stroke(Color(red: 0.90, green: 0.85, blue: 0.82), lineWidth: 1)
                                 )
+                                .submitLabel(.done)
                         }
                         
                         // Create Account button

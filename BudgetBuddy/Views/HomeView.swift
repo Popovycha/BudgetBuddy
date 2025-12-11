@@ -228,7 +228,7 @@ struct HomeView: View {
                                             .font(.system(size: 12))
                                             .foregroundColor(Color(red: 0.85, green: 0.85, blue: 0.90))
                                         
-                                        Text("20%")
+                                        Text(String(format: "%.0f%%", getRecommendedSavingsForAge()))
                                             .font(.system(size: 24, weight: .bold))
                                             .foregroundColor(Color(red: 0.50, green: 0.90, blue: 0.50))
                                     }
@@ -244,7 +244,7 @@ struct HomeView: View {
                                         .font(.system(size: 12))
                                         .foregroundColor(Color(red: 0.50, green: 0.80, blue: 1.0))
                                     
-                                    Text("Avg American your age saves ~4%")
+                                    Text("Avg American your age saves ~\(String(format: "%.0f%%", getAverageSavingsForAge()))")
                                         .font(.system(size: 12))
                                         .foregroundColor(Color(red: 0.50, green: 0.80, blue: 1.0))
                                 }
@@ -276,7 +276,7 @@ struct HomeView: View {
                                         
                                         Text(String(format: "%.0f%%", calculateNeedsPercentage()))
                                             .font(.system(size: 14, weight: .semibold))
-                                            .foregroundColor(calculateNeedsPercentage() > 50 ? .red : Color(red: 0.35, green: 0.40, blue: 0.50))
+                                            .foregroundColor(getNeedsColor())
                                     }
                                     
                                     GeometryReader { geometry in
@@ -285,8 +285,8 @@ struct HomeView: View {
                                                 .fill(Color(red: 0.90, green: 0.90, blue: 0.95))
                                             
                                             RoundedRectangle(cornerRadius: 4)
-                                                .fill(Color(red: 0.40, green: 0.60, blue: 1.0))
-                                                .frame(width: geometry.size.width * CGFloat(min(calculateNeedsPercentage() / 100, 1.0)))
+                                                .fill(getNeedsBarColor())
+                                                .frame(width: geometry.size.width * CGFloat(getNeedsBarFillPercentage()))
                                         }
                                     }
                                     .frame(height: 8)
@@ -303,7 +303,7 @@ struct HomeView: View {
                                         
                                         Text(String(format: "%.0f%%", calculateWantsPercentage()))
                                             .font(.system(size: 14, weight: .semibold))
-                                            .foregroundColor(calculateWantsPercentage() > 30 ? .red : Color(red: 0.35, green: 0.40, blue: 0.50))
+                                            .foregroundColor(getWantsColor())
                                     }
                                     
                                     GeometryReader { geometry in
@@ -312,8 +312,8 @@ struct HomeView: View {
                                                 .fill(Color(red: 0.90, green: 0.90, blue: 0.95))
                                             
                                             RoundedRectangle(cornerRadius: 4)
-                                                .fill(Color(red: 0.95, green: 0.70, blue: 0.65))
-                                                .frame(width: geometry.size.width * CGFloat(min(calculateWantsPercentage() / 100, 1.0)))
+                                                .fill(getWantsBarColor())
+                                                .frame(width: geometry.size.width * CGFloat(getWantsBarFillPercentage()))
                                         }
                                     }
                                     .frame(height: 8)
@@ -453,7 +453,8 @@ struct HomeView: View {
                                 Text("See how you stack up against your area")
                                     .font(.system(size: 12))
                                     .foregroundColor(Color(red: 0.35, green: 0.40, blue: 0.50))
-                                    .padding(.horizontal, 4)
+                                    .frame(maxWidth: .infinity)
+                                    .multilineTextAlignment(.center)
                             }
                             .padding(20)
                             .background(Color.white)
@@ -554,6 +555,150 @@ struct HomeView: View {
         formatter.numberStyle = .currency
         formatter.currencySymbol = "$"
         return formatter.string(from: NSNumber(value: value)) ?? "$0.00"
+    }
+    
+    private func getNeedsColor() -> Color {
+        let needs = calculateNeedsPercentage()
+        let target = 50.0
+        let threshold = 2.0
+        
+        // Within threshold (48-52%) = yellow
+        if abs(needs - target) <= threshold {
+            return Color(red: 1.0, green: 0.8, blue: 0.0)  // Yellow
+        }
+        // Below target = green
+        else if needs < target {
+            return Color(red: 0.45, green: 0.85, blue: 0.45)  // Green
+        }
+        // Above target = red
+        else {
+            return Color.red
+        }
+    }
+    
+    private func getWantsColor() -> Color {
+        let wants = calculateWantsPercentage()
+        let target = 30.0
+        let threshold = 2.0
+        
+        // Within threshold (28-32%) = yellow
+        if abs(wants - target) <= threshold {
+            return Color(red: 1.0, green: 0.8, blue: 0.0)  // Yellow
+        }
+        // Below target = green
+        else if wants < target {
+            return Color(red: 0.45, green: 0.85, blue: 0.45)  // Green
+        }
+        // Above target = red
+        else {
+            return Color.red
+        }
+    }
+    
+    private func getNeedsBarColor() -> Color {
+        let needs = calculateNeedsPercentage()
+        let target = 50.0
+        let threshold = 2.0
+        
+        // Within threshold (48-52%) = yellow
+        if abs(needs - target) <= threshold {
+            return Color(red: 1.0, green: 0.8, blue: 0.0)  // Yellow
+        }
+        // Below target = green
+        else if needs < target {
+            return Color(red: 0.45, green: 0.85, blue: 0.45)  // Green
+        }
+        // Above target = red
+        else {
+            return Color.red
+        }
+    }
+    
+    private func getNeedsBarFillPercentage() -> Double {
+        let needs = calculateNeedsPercentage()
+        let target = 50.0
+        
+        // If above target, fill 100%
+        if needs >= target {
+            return 1.0
+        }
+        // If below target, fill proportionally (e.g., 25% of target = 50% of bar)
+        else {
+            return needs / target
+        }
+    }
+    
+    private func getWantsBarColor() -> Color {
+        let wants = calculateWantsPercentage()
+        let target = 30.0
+        let threshold = 2.0
+        
+        // Within threshold (28-32%) = yellow
+        if abs(wants - target) <= threshold {
+            return Color(red: 1.0, green: 0.8, blue: 0.0)  // Yellow
+        }
+        // Below target = green
+        else if wants < target {
+            return Color(red: 0.45, green: 0.85, blue: 0.45)  // Green
+        }
+        // Above target = red
+        else {
+            return Color.red
+        }
+    }
+    
+    private func getWantsBarFillPercentage() -> Double {
+        let wants = calculateWantsPercentage()
+        let target = 30.0
+        
+        // If above target, fill 100%
+        if wants >= target {
+            return 1.0
+        }
+        // If below target, fill proportionally (e.g., 15% of target = 50% of bar)
+        else {
+            return wants / target
+        }
+    }
+    
+    private func getRecommendedSavingsForAge() -> Double {
+        let age = profileViewModel.userProfile?.age ?? 0
+        
+        // Age-based savings recommendations
+        switch age {
+        case 0...25:
+            return 15.0  // Young adults should save 15%
+        case 26...35:
+            return 18.0  // Early career: 18%
+        case 36...45:
+            return 20.0  // Mid-career: 20%
+        case 46...55:
+            return 25.0  // Pre-retirement: 25%
+        case 56...65:
+            return 30.0  // Near retirement: 30%
+        default:
+            return 25.0  // Retirement: 25%
+        }
+    }
+    
+    private func getAverageSavingsForAge() -> Double {
+        let age = profileViewModel.userProfile?.age ?? 0
+        
+        // Average American savings by age group (based on Federal Reserve data)
+        switch age {
+        case 0...25:
+            return 2.0   // Young adults average 2%
+        case 26...35:
+            return 4.0   // Early career average 4%
+        case 36...45:
+            return 6.0   // Mid-career average 6%
+        case 46...55:
+            return 8.0   // Pre-retirement average 8%
+        case 56...65:
+            return 10.0  // Near retirement average 10%
+        default:
+            return 7.0   // Retirement average 7%
+        }
     }
 }
 

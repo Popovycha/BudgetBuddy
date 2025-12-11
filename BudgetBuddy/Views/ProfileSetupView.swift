@@ -73,6 +73,7 @@ struct ProfileSetupView: View {
                                     RoundedRectangle(cornerRadius: 8)
                                         .stroke(Color(red: 0.90, green: 0.85, blue: 0.82), lineWidth: 1)
                                 )
+                                .submitLabel(.next)
                         }
                         
                         // Number of Dependents
@@ -90,6 +91,7 @@ struct ProfileSetupView: View {
                                     RoundedRectangle(cornerRadius: 8)
                                         .stroke(Color(red: 0.90, green: 0.85, blue: 0.82), lineWidth: 1)
                                 )
+                                .submitLabel(.next)
                         }
                         
                         // Location with autocomplete
@@ -103,6 +105,7 @@ struct ProfileSetupView: View {
                                     TextField("New York, NY", text: $profileViewModel.location)
                                         .autocapitalization(.words)
                                         .padding(12)
+                                        .submitLabel(.next)
                                         .onChange(of: profileViewModel.location) { newValue in
                                             if !newValue.isEmpty {
                                                 searchLocations(query: newValue)
@@ -185,6 +188,7 @@ struct ProfileSetupView: View {
                                     RoundedRectangle(cornerRadius: 8)
                                         .stroke(Color(red: 0.90, green: 0.85, blue: 0.82), lineWidth: 1)
                                 )
+                                .submitLabel(.next)
                                 .onChange(of: profileViewModel.zipCode) { newZipcode in
                                     if newZipcode.count == 5 {
                                         if let result = ZipcodeService.shared.lookupZipcode(newZipcode) {
@@ -207,6 +211,7 @@ struct ProfileSetupView: View {
                                 
                                 TextField("0.00", text: $profileViewModel.monthlyNetIncome)
                                     .keyboardType(.decimalPad)
+                                    .submitLabel(.done)
                             }
                             .padding(12)
                             .background(Color.white)

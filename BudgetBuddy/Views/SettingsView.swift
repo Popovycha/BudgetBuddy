@@ -189,6 +189,7 @@ struct EditProfileView: View {
     @State private var email = ""
     @State private var password = ""
     @State private var dateOfBirth = Date()
+    @State private var zipcode = ""
     @State private var isSaving = false
     
     var body: some View {
@@ -237,6 +238,7 @@ struct EditProfileView: View {
                                     .background(Color.white)
                                     .cornerRadius(8)
                                     .font(.system(size: 14))
+                                    .submitLabel(.next)
                             }
                             
                             // Last Name
@@ -250,6 +252,7 @@ struct EditProfileView: View {
                                     .background(Color.white)
                                     .cornerRadius(8)
                                     .font(.system(size: 14))
+                                    .submitLabel(.next)
                             }
                             
                             // Email
@@ -264,6 +267,7 @@ struct EditProfileView: View {
                                     .cornerRadius(8)
                                     .font(.system(size: 14))
                                     .keyboardType(.emailAddress)
+                                    .submitLabel(.next)
                             }
                             
                             // Password
@@ -277,6 +281,7 @@ struct EditProfileView: View {
                                     .background(Color.white)
                                     .cornerRadius(8)
                                     .font(.system(size: 14))
+                                    .submitLabel(.next)
                             }
                             
                             // Date of Birth
@@ -290,6 +295,24 @@ struct EditProfileView: View {
                                     .background(Color.white)
                                     .cornerRadius(8)
                                     .font(.system(size: 14))
+                                    .onChange(of: dateOfBirth) { newDate in
+                                        updateAgeFromDOB(newDate)
+                                    }
+                            }
+                            
+                            // Zipcode
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Zipcode")
+                                    .font(.system(size: 12, weight: .semibold))
+                                    .foregroundColor(Color(red: 0.35, green: 0.40, blue: 0.50))
+                                
+                                TextField("Zipcode", text: $zipcode)
+                                    .padding(12)
+                                    .background(Color.white)
+                                    .cornerRadius(8)
+                                    .font(.system(size: 14))
+                                    .keyboardType(.numberPad)
+                                    .submitLabel(.done)
                             }
                         }
                         .padding(20)
@@ -307,17 +330,31 @@ struct EditProfileView: View {
         firstName = authViewModel.currentUser?.firstName ?? ""
         lastName = authViewModel.currentUser?.lastName ?? ""
         email = authViewModel.currentUser?.email ?? ""
+        zipcode = profileViewModel.userProfile?.zipCode ?? ""
     }
     
     private func saveProfile() {
         isSaving = true
         
-        // Update auth view model
-        // Note: In a real app, you'd update the backend here
+        // Update profile view model with zipcode
+        profileViewModel.zipCode = zipcode
+        
+        // Save to local storage
+        if let userId = profileViewModel.userProfile?.userId {
+            profileViewModel.saveProfile(userId: userId)
+        }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
             isSaving = false
             isPresented = false
+        }
+    }
+    
+    private func updateAgeFromDOB(_ dob: Date) {
+        let calendar = Calendar.current
+        let ageComponents = calendar.dateComponents([.year], from: dob, to: Date())
+        if let age = ageComponents.year, age >= 0 {
+            profileViewModel.age = String(age)
         }
     }
 }

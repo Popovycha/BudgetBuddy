@@ -179,6 +179,7 @@ struct ExpenseField: View {
                 
                 TextField("0.00", text: $value)
                     .keyboardType(.decimalPad)
+                    .submitLabel(.next)
             }
             .padding(12)
             .background(Color.white)
