@@ -8,6 +8,7 @@ struct HomeView: View {
     @State private var showSettings = false
     @State private var isEditingExpenses = false
     @State private var showAnalysis = false
+    @State private var showNeighborhoodComparison = false
     @State private var tempNetIncome: String = ""
     @State private var isEditingIncome = false
     
@@ -360,7 +361,7 @@ struct HomeView: View {
                             .cornerRadius(16)
                             
                             // Financial Wisdom Card
-                            VStack(alignment: .leading, spacing: 12) {
+                            VStack(alignment: .leading, spacing: 16) {
                                 HStack(spacing: 8) {
                                     Image(systemName: "lightbulb.fill")
                                         .font(.system(size: 18))
@@ -371,7 +372,8 @@ struct HomeView: View {
                                         .foregroundColor(Color(red: 0.95, green: 0.70, blue: 0.65))
                                 }
                                 
-                                VStack(alignment: .leading, spacing: 12) {
+                                VStack(alignment: .leading, spacing: 16) {
+                                    // Tip 1
                                     HStack(alignment: .top, spacing: 12) {
                                         Text("1")
                                             .font(.system(size: 14, weight: .bold))
@@ -387,7 +389,71 @@ struct HomeView: View {
                                                 .foregroundColor(Color(red: 0.35, green: 0.40, blue: 0.50))
                                         }
                                     }
+                                    
+                                    // Tip 2
+                                    HStack(alignment: .top, spacing: 12) {
+                                        Text("2")
+                                            .font(.system(size: 14, weight: .bold))
+                                            .foregroundColor(Color(red: 0.95, green: 0.70, blue: 0.65))
+                                        
+                                        VStack(alignment: .leading, spacing: 4) {
+                                            Text("An Emergency Fund")
+                                                .font(.system(size: 14, weight: .semibold))
+                                                .foregroundColor(Color(red: 0.95, green: 0.70, blue: 0.65))
+                                            
+                                            Text("should cover 3-6 months of essential expenses.")
+                                                .font(.system(size: 12))
+                                                .foregroundColor(Color(red: 0.35, green: 0.40, blue: 0.50))
+                                        }
+                                    }
+                                    
+                                    // Tip 3
+                                    HStack(alignment: .top, spacing: 12) {
+                                        Text("3")
+                                            .font(.system(size: 14, weight: .bold))
+                                            .foregroundColor(Color(red: 0.95, green: 0.70, blue: 0.65))
+                                        
+                                        VStack(alignment: .leading, spacing: 4) {
+                                            Text("High-interest debt")
+                                                .font(.system(size: 14, weight: .semibold))
+                                                .foregroundColor(Color(red: 0.95, green: 0.70, blue: 0.65))
+                                            
+                                            Text("(like credit cards) should generally be paid off before aggressive investing.")
+                                                .font(.system(size: 12))
+                                                .foregroundColor(Color(red: 0.35, green: 0.40, blue: 0.50))
+                                        }
+                                    }
                                 }
+                            }
+                            .padding(20)
+                            .background(Color.white)
+                            .cornerRadius(16)
+                            
+                            // Compare to Neighborhood Card
+                            VStack(alignment: .leading, spacing: 12) {
+                                Button(action: {
+                                    showNeighborhoodComparison = true
+                                }) {
+                                    HStack {
+                                        Image(systemName: "location.fill")
+                                            .font(.system(size: 16))
+                                        
+                                        Text("Compare to Neighborhood")
+                                            .font(.system(size: 14, weight: .semibold))
+                                        
+                                        Spacer()
+                                    }
+                                    .frame(maxWidth: .infinity)
+                                    .padding(14)
+                                    .foregroundColor(.white)
+                                    .background(Color(red: 0.15, green: 0.20, blue: 0.35))
+                                    .cornerRadius(12)
+                                }
+                                
+                                Text("See how you stack up against your area")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(Color(red: 0.35, green: 0.40, blue: 0.50))
+                                    .padding(.horizontal, 4)
                             }
                             .padding(20)
                             .background(Color.white)
@@ -410,6 +476,20 @@ struct HomeView: View {
                     monthlyExpensesViewModel: monthlyExpensesViewModel,
                     profileViewModel: profileViewModel,
                     isPresented: $showAnalysis
+                )
+            }
+            .sheet(isPresented: $showNeighborhoodComparison) {
+                NeighborhoodComparisonView(
+                    profileViewModel: profileViewModel,
+                    monthlyExpensesViewModel: monthlyExpensesViewModel,
+                    isPresented: $showNeighborhoodComparison
+                )
+            }
+            .sheet(isPresented: $showSettings) {
+                SettingsView(
+                    authViewModel: authViewModel,
+                    profileViewModel: profileViewModel,
+                    isPresented: $showSettings
                 )
             }
         }
