@@ -77,6 +77,51 @@ class ProfileViewModel: ObservableObject {
         storageService.saveUserProfile(profile)
         self.userProfile = profile
         
+        // Save to Supabase
+        let maritalStatusString = maritalStatus.rawValue
+        
+        // Capture variables for use in nested closures
+        let capturedLocation = location
+        let capturedZipCode = zipCode
+        
+        // Always try to insert first, if it fails (duplicate key), then update
+        SupabaseService.shared.saveProfileDetails(
+            userId: userId,
+            age: ageInt,
+            numberOfDependents: dependents,
+            location: capturedLocation,
+            zipCode: capturedZipCode,
+            monthlyNetIncome: income,
+            maritalStatus: maritalStatusString
+        ) { result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success:
+                    print("Profile saved to Supabase successfully")
+                case .failure(let error):
+                    // If insert fails (likely duplicate), try update
+                    print("Insert failed, attempting update: \(error)")
+                    SupabaseService.shared.updateProfileDetails(
+                        userId: userId,
+                        age: ageInt,
+                        numberOfDependents: dependents,
+                        location: capturedLocation,
+                        zipCode: capturedZipCode,
+                        monthlyNetIncome: income,
+                        maritalStatus: maritalStatusString
+                    ) { updateResult in
+                        DispatchQueue.main.async {
+                            if case .failure(let updateError) = updateResult {
+                                print("Error updating profile in Supabase: \(updateError)")
+                            } else {
+                                print("Profile updated to Supabase successfully")
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
         isLoading = false
     }
     

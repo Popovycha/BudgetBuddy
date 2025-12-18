@@ -149,6 +149,53 @@ class MonthlyExpensesViewModel: ObservableObject {
         storageService.saveMonthlyExpenses(expenses)
         self.monthlyExpenses = expenses
         
+        // Save to Supabase
+        // Always try to insert first, if it fails (duplicate key), then update
+        SupabaseService.shared.saveMonthlyExpenses(
+            userId: userId,
+            housing: housingAmount,
+            transportation: transportAmount,
+            carPayment: carPaymentAmount,
+            carInsurance: carInsuranceAmount,
+            carMaintenance: carMaintenanceAmount,
+            groceries: groceriesAmount,
+            subscriptions: subscriptionsAmount,
+            otherExpenses: otherAmount,
+            savings: savingsAmount,
+            dependentExpenses: dependentAmount ?? 0
+        ) { result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success:
+                    print("Expenses saved to Supabase successfully")
+                case .failure(let error):
+                    // If insert fails (likely duplicate), try update
+                    print("Insert failed, attempting update: \(error)")
+                    SupabaseService.shared.updateMonthlyExpenses(
+                        userId: userId,
+                        housing: housingAmount,
+                        transportation: transportAmount,
+                        carPayment: carPaymentAmount,
+                        carInsurance: carInsuranceAmount,
+                        carMaintenance: carMaintenanceAmount,
+                        groceries: groceriesAmount,
+                        subscriptions: subscriptionsAmount,
+                        otherExpenses: otherAmount,
+                        savings: savingsAmount,
+                        dependentExpenses: dependentAmount
+                    ) { updateResult in
+                        DispatchQueue.main.async {
+                            if case .failure(let updateError) = updateResult {
+                                print("Error updating expenses in Supabase: \(updateError)")
+                            } else {
+                                print("Expenses updated to Supabase successfully")
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
         isLoading = false
     }
     
