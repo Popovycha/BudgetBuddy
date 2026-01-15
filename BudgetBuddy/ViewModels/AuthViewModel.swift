@@ -1,13 +1,15 @@
 import Foundation
 import Combine
 import Supabase
+import AuthenticationServices
 
-class AuthViewModel: ObservableObject {
+class AuthViewModel: NSObject, ObservableObject, ASWebAuthenticationPresentationContextProviding {
     @Published var isAuthenticated = false
     @Published var currentUser: User?
     @Published var errorMessage: String?
     @Published var isLoading = false
     @Published var showProfileSetup = false
+    @Published var showEmailVerification = false
     
     private var cancellables = Set<AnyCancellable>()
     private let storageService = LocalStorageService.shared
@@ -16,6 +18,10 @@ class AuthViewModel: ObservableObject {
         supabaseURL: URL(string: "https://stawhbhqkcstsmqjkquz.supabase.co")!,
         supabaseKey: "sb_publishable_me9hrng2DpDHGeNBMHsdTw_R-0eyDKN"
     )
+    
+    func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
+        return ASPresentationAnchor()
+    }
     
     // MARK: - Authentication Methods
     
@@ -36,17 +42,80 @@ class AuthViewModel: ObservableObject {
         Task {
             do {
                 let session = try await supabase.auth.signIn(email: email, password: password)
+                let userId = session.user.id.uuidString
                 
-                DispatchQueue.main.async {
-                    self.currentUser = User(
-                        id: session.user.id.uuidString,
-                        email: email,
-                        firstName: "User",
-                        lastName: "Name",
-                        authProvider: .email
-                    )
-                    self.isAuthenticated = true
-                    self.isLoading = false
+                print("🔐 Login successful, userId: \(userId)")
+                
+                // Try to fetch user profile from Supabase
+                do {
+                    let response = try await supabase
+                        .from("users")
+                        .select()
+                        .eq("id", value: userId)
+                        .execute()
+                    
+                    print("📦 Users response status: \(response.status)")
+                    if let responseString = String(data: response.data, encoding: .utf8) {
+                        print("📦 Users response data: \(responseString)")
+                    }
+                    
+                    let decoder = JSONDecoder()
+                    let usersArray = try decoder.decode([[String: String]].self, from: response.data)
+                    print("📦 Decoded users array count: \(usersArray.count)")
+                    
+                    if let userData = usersArray.first {
+                        var firstName = (userData["first_name"] ?? "User").trimmingCharacters(in: .whitespacesAndNewlines)
+                        var lastName = (userData["last_name"] ?? "Name").trimmingCharacters(in: .whitespacesAndNewlines)
+                        
+                        // Remove any backticks or special characters
+                        firstName = firstName.filter { $0.isLetter || $0.isWhitespace }
+                        lastName = lastName.filter { $0.isLetter || $0.isWhitespace }
+                        
+                        print("✅ User found: \(firstName) \(lastName)")
+                        
+                        DispatchQueue.main.async {
+                            self.currentUser = User(
+                                id: userId,
+                                email: email,
+                                firstName: firstName,
+                                lastName: lastName,
+                                authProvider: .email
+                            )
+                            self.storageService.saveUser(self.currentUser!)
+                            self.isAuthenticated = true
+                            self.isLoading = false
+                        }
+                    } else {
+                        // If query returns empty, use default names
+                        print("⚠️ No user data found, using defaults")
+                        DispatchQueue.main.async {
+                            self.currentUser = User(
+                                id: userId,
+                                email: email,
+                                firstName: "User",
+                                lastName: "Name",
+                                authProvider: .email
+                            )
+                            self.storageService.saveUser(self.currentUser!)
+                            self.isAuthenticated = true
+                            self.isLoading = false
+                        }
+                    }
+                } catch {
+                    // If query fails, still allow login with default names
+                    print("⚠️ Failed to fetch user data: \(error), using defaults")
+                    DispatchQueue.main.async {
+                        self.currentUser = User(
+                            id: userId,
+                            email: email,
+                            firstName: "User",
+                            lastName: "Name",
+                            authProvider: .email
+                        )
+                        self.storageService.saveUser(self.currentUser!)
+                        self.isAuthenticated = true
+                        self.isLoading = false
+                    }
                 }
             } catch {
                 DispatchQueue.main.async {
@@ -69,24 +138,6 @@ class AuthViewModel: ObservableObject {
                 firstName: "Google",
                 lastName: "User",
                 authProvider: .google
-            )
-            self.isAuthenticated = true
-            self.isLoading = false
-        }
-    }
-    
-    func loginWithFacebook() {
-        isLoading = true
-        errorMessage = nil
-        
-        // TODO: Implement Facebook Sign-In
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-            self.currentUser = User(
-                id: UUID().uuidString,
-                email: "user@facebook.com",
-                firstName: "Facebook",
-                lastName: "User",
-                authProvider: .facebook
             )
             self.isAuthenticated = true
             self.isLoading = false
@@ -132,7 +183,13 @@ class AuthViewModel: ObservableObject {
                     // Save user profile to Supabase
                     Task {
                         do {
-                            try await self.supabase.database
+                            print("💾 Saving user to Supabase:")
+                            print("  - userId: \(userId)")
+                            print("  - firstName: \(firstName)")
+                            print("  - lastName: \(lastName)")
+                            print("  - email: \(email)")
+                            
+                            try await self.supabase
                                 .from("users")
                                 .insert([
                                     "id": userId,
@@ -142,18 +199,16 @@ class AuthViewModel: ObservableObject {
                                     "created_at": ISO8601DateFormatter().string(from: Date())
                                 ])
                                 .execute()
+                            
+                            print("✅ User saved to Supabase successfully")
                         } catch {
-                            print("Error saving profile to Supabase: \(error)")
+                            print("❌ Error saving user to Supabase: \(error)")
                         }
                     }
                     
-                    // Check if profile exists, if not show profile setup
-                    if !self.storageService.profileExists(userId: userId) {
-                        self.showProfileSetup = true
-                    } else {
-                        self.isAuthenticated = true
-                    }
-                    
+                    // Proceed to profile setup
+                    self.isAuthenticated = false
+                    self.showProfileSetup = true
                     self.isLoading = false
                 }
             } catch {
@@ -165,9 +220,12 @@ class AuthViewModel: ObservableObject {
         }
     }
     
+    
     func logout() {
         isAuthenticated = false
         currentUser = nil
         errorMessage = nil
+        showProfileSetup = false
+        storageService.deleteCurrentUser()
     }
 }

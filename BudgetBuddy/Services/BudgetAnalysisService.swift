@@ -57,7 +57,7 @@ class BudgetAnalysisService {
         // Calculate totals
         let needs = housing + groceries + transportation
         let wants = subscriptions + otherExpenses
-        let carTotal = carPayment + transportation
+        let carTotal = carPayment + carInsurance + carMaintenance
         
         // Calculate percentages
         let needsPercentage = (needs / monthlyNetIncome) * 100

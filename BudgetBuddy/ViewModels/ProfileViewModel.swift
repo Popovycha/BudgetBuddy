@@ -11,20 +11,55 @@ class ProfileViewModel: ObservableObject {
     @Published var maritalStatus: UserProfile.MaritalStatus = .single
     @Published var isLoading = false
     @Published var errorMessage: String?
+    @Published var profileSaved = false
     
     private let storageService = LocalStorageService.shared
     
     func loadProfile(userId: String) {
+        print("📥 loadProfile called with userId: \(userId)")
+        
+        // First try to load from local storage
         if let profile = storageService.getUserProfile(userId: userId) {
+            print("📦 Profile loaded from local storage")
             self.userProfile = profile
             self.age = String(profile.age ?? 0)
             self.numberOfDependents = String(profile.numberOfDependents ?? 0)
             self.location = profile.location ?? ""
             self.zipCode = profile.zipCode ?? ""
-            self.monthlyNetIncome = String(profile.monthlyNetIncome ?? 0)
+            self.monthlyNetIncome = String(format: "%.2f", profile.monthlyNetIncome ?? 0)
             self.maritalStatus = profile.maritalStatus ?? .single
+            print("  - Monthly Net Income from storage: \(self.monthlyNetIncome)")
         } else {
+            print("📦 No profile in local storage, creating new one")
             self.userProfile = UserProfile(userId: userId)
+        }
+        
+        // Also fetch from Supabase to ensure latest data
+        SupabaseService.shared.fetchUserProfile(userId: userId) { result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let profile):
+                    print("✅ Profile fetched successfully from Supabase")
+                    print("  - Age: \(profile.age ?? 0)")
+                    print("  - Location: \(profile.location ?? "nil")")
+                    print("  - ZipCode: \(profile.zipCode ?? "nil")")
+                    print("  - Monthly Net Income: \(profile.monthlyNetIncome ?? 0)")
+                    print("  - Marital Status: \(profile.maritalStatus?.rawValue ?? "nil")")
+                    
+                    self.userProfile = profile
+                    self.age = String(profile.age ?? 0)
+                    self.numberOfDependents = String(profile.numberOfDependents ?? 0)
+                    self.location = profile.location ?? ""
+                    self.zipCode = profile.zipCode ?? ""
+                    self.monthlyNetIncome = String(format: "%.2f", profile.monthlyNetIncome ?? 0)
+                    self.maritalStatus = profile.maritalStatus ?? .single
+                    // Save to local storage
+                    self.storageService.saveUserProfile(profile)
+                case .failure(let error):
+                    print("❌ Error fetching profile from Supabase: \(error)")
+                    print("   Using profile from local storage if available")
+                }
+            }
         }
     }
     
@@ -85,6 +120,7 @@ class ProfileViewModel: ObservableObject {
         let capturedZipCode = zipCode
         
         // Always try to insert first, if it fails (duplicate key), then update
+        print("💾 Starting profile save with userId: \(userId)")
         SupabaseService.shared.saveProfileDetails(
             userId: userId,
             age: ageInt,
@@ -97,10 +133,12 @@ class ProfileViewModel: ObservableObject {
             DispatchQueue.main.async {
                 switch result {
                 case .success:
-                    print("Profile saved to Supabase successfully")
+                    print("✅ Profile saved to Supabase successfully")
+                    self.isLoading = false
+                    self.profileSaved = true
                 case .failure(let error):
                     // If insert fails (likely duplicate), try update
-                    print("Insert failed, attempting update: \(error)")
+                    print("⚠️ Insert failed, attempting update: \(error)")
                     SupabaseService.shared.updateProfileDetails(
                         userId: userId,
                         age: ageInt,
@@ -112,17 +150,19 @@ class ProfileViewModel: ObservableObject {
                     ) { updateResult in
                         DispatchQueue.main.async {
                             if case .failure(let updateError) = updateResult {
-                                print("Error updating profile in Supabase: \(updateError)")
+                                print("❌ Error updating profile in Supabase: \(updateError)")
+                                self.errorMessage = "Failed to save profile"
+                                self.isLoading = false
                             } else {
-                                print("Profile updated to Supabase successfully")
+                                print("✅ Profile updated to Supabase successfully")
+                                self.isLoading = false
+                                self.profileSaved = true
                             }
                         }
                     }
                 }
             }
         }
-        
-        isLoading = false
     }
     
     func isProfileComplete() -> Bool {

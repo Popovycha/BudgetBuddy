@@ -4,6 +4,7 @@ struct LoginView: View {
     @ObservedObject var viewModel: AuthViewModel
     @State private var email = ""
     @State private var password = ""
+    @State private var showPassword = false
     @Environment(\.presentationMode) var presentationMode
     
     var body: some View {
@@ -87,15 +88,27 @@ struct LoginView: View {
                                 .font(.system(size: 14, weight: .semibold))
                                 .foregroundColor(.black)
                             
-                            SecureField("Enter your password", text: $password)
-                                .textContentType(.password)
-                                .padding(12)
-                                .background(Color.white)
-                                .cornerRadius(8)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 8)
-                                        .stroke(Color(red: 0.90, green: 0.85, blue: 0.82), lineWidth: 1)
-                                )
+                            HStack {
+                                if showPassword {
+                                    TextField("Enter your password", text: $password)
+                                        .textContentType(.password)
+                                } else {
+                                    SecureField("Enter your password", text: $password)
+                                        .textContentType(.password)
+                                }
+                                
+                                Button(action: { showPassword.toggle() }) {
+                                    Image(systemName: showPassword ? "eye.fill" : "eye.slash.fill")
+                                        .foregroundColor(Color(red: 0.35, green: 0.40, blue: 0.50))
+                                }
+                            }
+                            .padding(12)
+                            .background(Color.white)
+                            .cornerRadius(8)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(Color(red: 0.90, green: 0.85, blue: 0.82), lineWidth: 1)
+                            )
                         }
                         
                         // Sign In button
@@ -117,77 +130,6 @@ struct LoginView: View {
                         .cornerRadius(16)
                         .disabled(viewModel.isLoading)
                         
-                        // Divider
-                        HStack {
-                            Rectangle()
-                                .frame(height: 1)
-                                .foregroundColor(Color(red: 0.90, green: 0.85, blue: 0.82))
-                            
-                            Text("or")
-                                .font(.system(size: 14))
-                                .foregroundColor(Color(red: 0.35, green: 0.40, blue: 0.50))
-                            
-                            Rectangle()
-                                .frame(height: 1)
-                                .foregroundColor(Color(red: 0.90, green: 0.85, blue: 0.82))
-                        }
-                        
-                        // Social login buttons
-                        VStack(spacing: 12) {
-                            // Google button
-                            Button(action: {
-                                viewModel.loginWithGoogle()
-                            }) {
-                                HStack(spacing: 12) {
-                                    Image(systemName: "g.circle.fill")
-                                        .font(.system(size: 20))
-                                        .foregroundColor(Color(red: 0.95, green: 0.70, blue: 0.65))
-                                    
-                                    Text("Continue with Google")
-                                        .font(.system(size: 14, weight: .semibold))
-                                        .foregroundColor(.black)
-                                    
-                                    Spacer()
-                                }
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 48)
-                                .padding(.horizontal, 12)
-                                .background(Color.white)
-                                .cornerRadius(12)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .stroke(Color(red: 0.90, green: 0.85, blue: 0.82), lineWidth: 1)
-                                )
-                            }
-                            .disabled(viewModel.isLoading)
-                            
-                            // Facebook button
-                            Button(action: {
-                                viewModel.loginWithFacebook()
-                            }) {
-                                HStack(spacing: 12) {
-                                    Image(systemName: "f.circle.fill")
-                                        .font(.system(size: 20))
-                                        .foregroundColor(Color(red: 0.95, green: 0.70, blue: 0.65))
-                                    
-                                    Text("Continue with Facebook")
-                                        .font(.system(size: 14, weight: .semibold))
-                                        .foregroundColor(.black)
-                                    
-                                    Spacer()
-                                }
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 48)
-                                .padding(.horizontal, 12)
-                                .background(Color.white)
-                                .cornerRadius(12)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .stroke(Color(red: 0.90, green: 0.85, blue: 0.82), lineWidth: 1)
-                                )
-                            }
-                            .disabled(viewModel.isLoading)
-                        }
                         
                         Spacer()
                             .frame(height: 20)

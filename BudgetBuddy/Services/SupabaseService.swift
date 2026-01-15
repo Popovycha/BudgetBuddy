@@ -220,6 +220,89 @@ class SupabaseService {
     
     // MARK: - User Profile Details
     
+    func fetchUserProfile(userId: String, completion: @escaping (Result<UserProfile, Error>) -> Void) {
+        Task {
+            do {
+                print("🔍 Fetching profile for userId: \(userId)")
+                print("🔍 userId type: \(type(of: userId))")
+                print("🔍 userId length: \(userId.count)")
+                
+                // Try with lowercase UUID
+                let lowerUserId = userId.lowercased()
+                print("🔍 Trying with lowercase userId: \(lowerUserId)")
+                
+                let response = try await supabase
+                    .from("user_profiles")
+                    .select()
+                    .eq("user_id", value: lowerUserId)
+                    .execute()
+                
+                print("📦 Response status: \(response.status)")
+                
+                let decoder = JSONDecoder()
+                decoder.dateDecodingStrategy = .iso8601
+                
+                // Debug: Print raw response data
+                print("📦 Response data type: \(type(of: response.data))")
+                print("📦 Response data length: \(response.data.count)")
+                
+                if let jsonString = String(data: response.data, encoding: .utf8) {
+                    print("📦 Raw profile response: \(jsonString)")
+                } else {
+                    print("📦 Could not convert response data to string")
+                }
+                
+                // If response is empty, try fetching all profiles and filtering
+                if response.data.count <= 2 {
+                    print("⚠️ Empty response for userId: \(lowerUserId)")
+                    print("⚠️ Trying to fetch all profiles and filter manually...")
+                    
+                    let allResponse = try await supabase
+                        .from("user_profiles")
+                        .select()
+                        .execute()
+                    
+                    if let allJsonString = String(data: allResponse.data, encoding: .utf8) {
+                        print("📦 All profiles response: \(allJsonString)")
+                    }
+                }
+                
+                // Try to decode as array first
+                var profile: UserProfile
+                do {
+                    let profiles = try decoder.decode([UserProfile].self, from: response.data)
+                    print("✅ Successfully decoded as array with \(profiles.count) profiles")
+                    
+                    guard let firstProfile = profiles.first else {
+                        throw NSError(domain: "SupabaseService", code: -1, userInfo: [NSLocalizedDescriptionKey: "No profile found for user"])
+                    }
+                    profile = firstProfile
+                } catch {
+                    print("❌ Failed to decode as array: \(error)")
+                    // Try to decode as single object
+                    profile = try decoder.decode(UserProfile.self, from: response.data)
+                }
+                
+                print("✅ Decoded profile:")
+                print("  - userId: \(profile.userId)")
+                print("  - age: \(profile.age ?? 0)")
+                print("  - zipCode: \(profile.zipCode ?? "nil")")
+                print("  - monthlyNetIncome: \(profile.monthlyNetIncome ?? 0)")
+                print("  - location: \(profile.location ?? "nil")")
+                
+                DispatchQueue.main.async {
+                    completion(.success(profile))
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    print("❌ Error fetching profile: \(error)")
+                    print("   Error type: \(type(of: error))")
+                    completion(.failure(error))
+                }
+            }
+        }
+    }
+    
     func saveProfileDetails(userId: String, age: Int, numberOfDependents: Int, location: String, zipCode: String, monthlyNetIncome: Double, maritalStatus: String, completion: @escaping (Result<Void, Error>) -> Void) {
         Task {
             do {
@@ -233,14 +316,39 @@ class SupabaseService {
                     marital_status: maritalStatus
                 )
                 
-                try await supabase
+                print("📝 Saving profile to Supabase:")
+                print("  - userId: \(userId)")
+                print("  - age: \(age)")
+                print("  - location: \(location)")
+                print("  - zipCode: \(zipCode)")
+                print("  - monthlyNetIncome: \(monthlyNetIncome)")
+                print("  - maritalStatus: \(maritalStatus)")
+                
+                let response = try await supabase
                     .from("user_profiles")
                     .insert(profile)
                     .execute()
                 
-                completion(.success(()))
+                print("✅ Profile saved to Supabase successfully")
+                print("📦 Response status: \(response.status)")
+                if let responseString = String(data: response.data, encoding: .utf8) {
+                    print("📦 Response data: \(responseString)")
+                }
+                
+                DispatchQueue.main.async {
+                    completion(.success(()))
+                }
             } catch {
-                completion(.failure(error))
+                print("❌ Error saving profile to Supabase: \(error)")
+                print("❌ Error type: \(type(of: error))")
+                if let postgrestError = error as? PostgrestError {
+                    print("❌ Postgrest error code: \(postgrestError.code ?? "unknown")")
+                    print("❌ Postgrest error message: \(postgrestError.message ?? "unknown")")
+                    print("❌ Postgrest error hint: \(postgrestError.hint ?? "unknown")")
+                }
+                DispatchQueue.main.async {
+                    completion(.failure(error))
+                }
             }
         }
     }

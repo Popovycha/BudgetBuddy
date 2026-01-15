@@ -141,9 +141,12 @@ struct ProfileSetupView: View {
                                     VStack(alignment: .leading, spacing: 0) {
                                         ForEach(locationSuggestions.prefix(5), id: \.zipCode) { result in
                                             Button(action: {
-                                                profileViewModel.location = "\(result.city), \(result.state)"
-                                                profileViewModel.zipCode = result.zipCode
-                                                showLocationSuggestions = false
+                                                DispatchQueue.main.async {
+                                                    profileViewModel.location = "\(result.city), \(result.state)"
+                                                    profileViewModel.zipCode = result.zipCode
+                                                    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                                                    showLocationSuggestions = false
+                                                }
                                             }) {
                                                 VStack(alignment: .leading, spacing: 4) {
                                                     Text("\(result.city), \(result.state)")
@@ -243,14 +246,23 @@ struct ProfileSetupView: View {
                             monthlyExpensesViewModel: monthlyExpensesViewModel,
                             profileViewModel: profileViewModel,
                             authViewModel: authViewModel
-                        )) {
-                            Text("Continue")
-                                .font(.system(size: 16, weight: .semibold))
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 56)
-                                .foregroundColor(.white)
-                                .background(Color(red: 0.15, green: 0.20, blue: 0.35))
-                                .cornerRadius(16)
+                        ), isActive: $profileViewModel.profileSaved) {
+                            if profileViewModel.isLoading {
+                                ProgressView()
+                                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 56)
+                                    .background(Color(red: 0.15, green: 0.20, blue: 0.35))
+                                    .cornerRadius(16)
+                            } else {
+                                Text("Continue")
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 56)
+                                    .foregroundColor(.white)
+                                    .background(Color(red: 0.15, green: 0.20, blue: 0.35))
+                                    .cornerRadius(16)
+                            }
                         }
                         .simultaneousGesture(TapGesture().onEnded {
                             if let userId = authViewModel.currentUser?.id {
