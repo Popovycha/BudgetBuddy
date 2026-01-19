@@ -1,6 +1,13 @@
 import Foundation
 import Combine
 
+enum ZipcodeVerificationStatus {
+    case idle
+    case verifying
+    case verified
+    case error(String)
+}
+
 class ProfileViewModel: ObservableObject {
     @Published var userProfile: UserProfile?
     @Published var age: String = ""
@@ -12,7 +19,15 @@ class ProfileViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var errorMessage: String?
     
+    @Published var zipcodeVerificationStatus: ZipcodeVerificationStatus = .idle
+    @Published var zipcodeData: ZipcodeData?
+    @Published var demographicData: ZipcodeDemographics?
+    @Published var metropolitanArea: MetropolitanArea?
+    
     private let storageService = LocalStorageService.shared
+    private let zipcodeService = ZipcodeService.shared
+    private let demographicService = DemographicDataService.shared
+    private let metropolitanService = MetropolitanAreaService.shared
     
     func loadProfile(userId: String) {
         if let profile = storageService.getUserProfile(userId: userId) {
@@ -87,5 +102,33 @@ class ProfileViewModel: ObservableObject {
                userProfile?.location != nil &&
                userProfile?.zipCode != nil &&
                userProfile?.monthlyNetIncome != nil
+    }
+    
+    func verifyZipcode(_ zipcode: String) {
+        zipcodeVerificationStatus = .verifying
+        
+        zipcodeService.verifyZipcode(zipcode) { [weak self] verified in
+            DispatchQueue.main.async {
+                guard let self = self else { return }
+                
+                if let verified = verified {
+                    self.zipcodeData = verified
+                    self.location = "\(verified.city), \(verified.state)"
+                    self.metropolitanArea = self.metropolitanService.getMetropolitanArea(for: zipcode)
+                    
+                    self.demographicService.fetchLiveCensusData(for: zipcode) { [weak self] demographics in
+                        DispatchQueue.main.async {
+                            self?.demographicData = demographics
+                            self?.zipcodeVerificationStatus = .verified
+                        }
+                    }
+                } else {
+                    self.zipcodeVerificationStatus = .error("Zipcode not found. Please verify and try again.")
+                    self.zipcodeData = nil
+                    self.demographicData = nil
+                    self.metropolitanArea = nil
+                }
+            }
+        }
     }
 }

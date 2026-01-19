@@ -133,11 +133,10 @@ class NeighborhoodComparisonService {
         let housingPercentage = 30.0 + Double((absHash / 1000) % 10)
         let population = 15000 + (absHash % 50000)
         
-        // Get city and state from zipcode service if available
-        let zipcodeService = ZipcodeService.shared
-        let location = zipcodeService.lookupZipcode(zipcode)
-        let city = location?.city ?? "Unknown City"
-        let state = location?.state ?? "US"
+        // Use default values for city and state
+        // (Zipcode verification happens separately via ZipcodeService API)
+        let city = "Unknown City"
+        let state = "US"
         
         return NeighborhoodData(
             zipcode: zipcode,

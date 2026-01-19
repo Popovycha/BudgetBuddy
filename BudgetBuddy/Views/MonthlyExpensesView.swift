@@ -6,6 +6,21 @@ struct MonthlyExpensesView: View {
     @ObservedObject var authViewModel: AuthViewModel
     @Environment(\.presentationMode) var presentationMode
     
+    private func calculateTotalExpenses() -> Double {
+        let housing = Double(monthlyExpensesViewModel.housing) ?? 0
+        let transportation = Double(monthlyExpensesViewModel.transportation) ?? 0
+        let carPayment = Double(monthlyExpensesViewModel.carPayment) ?? 0
+        let carInsurance = Double(monthlyExpensesViewModel.carInsurance) ?? 0
+        let carMaintenance = Double(monthlyExpensesViewModel.carMaintenance) ?? 0
+        let groceries = Double(monthlyExpensesViewModel.groceries) ?? 0
+        let subscriptions = Double(monthlyExpensesViewModel.subscriptions) ?? 0
+        let otherExpenses = Double(monthlyExpensesViewModel.otherExpenses) ?? 0
+        let savings = Double(monthlyExpensesViewModel.savings) ?? 0
+        let dependent = monthlyExpensesViewModel.showDependentExpenses ? (Double(monthlyExpensesViewModel.dependentExpenses) ?? 0) : 0
+        
+        return housing + transportation + carPayment + carInsurance + carMaintenance + groceries + subscriptions + otherExpenses + savings + dependent
+    }
+    
     var body: some View {
         ZStack {
             Color(red: 0.96, green: 0.93, blue: 0.91)

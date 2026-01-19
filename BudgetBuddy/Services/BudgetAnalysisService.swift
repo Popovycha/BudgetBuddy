@@ -8,11 +8,20 @@ struct BudgetRule {
     let suggestion: String
     let tier: Int // 1 = Standard, 2 = HCOL
     let isWarning: Bool // True if at or very close to limit (within 1%)
+    let category: String // "Housing", "Car", "Wants", "Needs", "Savings"
+}
+
+struct BudgetCategory {
+    let name: String
+    let rules: [BudgetRule]
+    let overagePercentage: Double // How much over the limit (negative if under)
+    let isBreached: Bool
 }
 
 struct BudgetAnalysisResult {
     let rules: [BudgetRule]
     let breachedRules: [BudgetRule]
+    let categories: [BudgetCategory] // Sorted by overage percentage (most over first)
     let overallScore: Double // 0-100
     let summary: String
     let isHCOL: Bool
@@ -41,6 +50,7 @@ class BudgetAnalysisService {
             return BudgetAnalysisResult(
                 rules: [],
                 breachedRules: [],
+                categories: [],
                 overallScore: 0,
                 summary: "Please enter a valid monthly net income.",
                 isHCOL: false,
@@ -48,9 +58,10 @@ class BudgetAnalysisService {
             )
         }
         
-        // Determine if user is in HCOL area
+        // Determine if user is in HCOL area or high-rent metropolitan area
         let isHCOL = isHCOLOverride ?? HCOLService.shared.isHCOLArea(zipcode: zipcode, city: city)
-        let tier = isHCOL ? 2 : 1
+        let isHighRentMetro = MetropolitanAreaService.shared.isHighRentMetropolitanArea(zipcode)
+        let tier = (isHCOL || isHighRentMetro) ? 2 : 1
         
         var rules: [BudgetRule] = []
         
@@ -97,7 +108,8 @@ class BudgetAnalysisService {
             targetPercentage: Double(needsTarget),
             suggestion: needsSuggestion,
             tier: tier,
-            isWarning: needsWarning
+            isWarning: needsWarning,
+            category: "Needs"
         ))
         
         // Rule 2: Wants (Tier 1: ≤ 30%, Tier 2: ≤ 20% if Needs > 55%)
@@ -120,7 +132,8 @@ class BudgetAnalysisService {
             targetPercentage: Double(wantsTarget),
             suggestion: wantsSuggestion,
             tier: tier,
-            isWarning: false
+            isWarning: false,
+            category: "Wants"
         ))
         
         // Rule 3: Savings (≥ 20% for Tier 1, ≥ 20% for Tier 2)
@@ -143,7 +156,8 @@ class BudgetAnalysisService {
             targetPercentage: Double(savingsTarget),
             suggestion: savingsSuggestion,
             tier: tier,
-            isWarning: false
+            isWarning: false,
+            category: "Savings"
         ))
         
         // Rule 4: Housing Max (Tier 1: ≤ 25%, Tier 2: ≤ 30% ideal, ≤ 35% acceptable)
@@ -170,7 +184,8 @@ class BudgetAnalysisService {
             targetPercentage: Double(housingTarget),
             suggestion: housingSuggestion,
             tier: tier,
-            isWarning: false
+            isWarning: false,
+            category: "Housing"
         ))
         
         // Rule 5: Car Payment Max (≤ 10%) - Non-negotiable across all tiers
@@ -192,7 +207,8 @@ class BudgetAnalysisService {
             targetPercentage: 10,
             suggestion: carPaymentSuggestion,
             tier: tier,
-            isWarning: carPaymentWarning
+            isWarning: carPaymentWarning,
+            category: "Car"
         ))
         
         // Rule 6: Total Car Cost Max (≤ 15%) - Non-negotiable across all tiers
@@ -214,7 +230,8 @@ class BudgetAnalysisService {
             targetPercentage: 15,
             suggestion: carTotalSuggestion,
             tier: tier,
-            isWarning: carTotalWarning
+            isWarning: carTotalWarning,
+            category: "Car"
         ))
         
         // Rule 7: Annual Savings Target (≥ 15%) - Non-negotiable across all tiers
@@ -236,11 +253,42 @@ class BudgetAnalysisService {
             targetPercentage: 15,
             suggestion: annualSavingsSuggestion,
             tier: tier,
-            isWarning: annualSavingsWarning
+            isWarning: annualSavingsWarning,
+            category: "Savings"
         ))
         
         // Calculate breached rules
         let breachedRules = rules.filter { $0.isBreached }
+        
+        // Group rules by category and calculate overage
+        var categoryMap: [String: [BudgetRule]] = [:]
+        for rule in rules {
+            if categoryMap[rule.category] == nil {
+                categoryMap[rule.category] = []
+            }
+            categoryMap[rule.category]?.append(rule)
+        }
+        
+        // Create BudgetCategory objects with overage percentages
+        var categories: [BudgetCategory] = []
+        for (categoryName, categoryRules) in categoryMap {
+            let maxOverage = categoryRules.map { max(0, $0.currentPercentage - $0.targetPercentage) }.max() ?? 0
+            let isBreached = categoryRules.contains { $0.isBreached }
+            categories.append(BudgetCategory(
+                name: categoryName,
+                rules: categoryRules,
+                overagePercentage: maxOverage,
+                isBreached: isBreached
+            ))
+        }
+        
+        // Sort categories by overage percentage (most over first), then by name
+        categories.sort { a, b in
+            if a.overagePercentage != b.overagePercentage {
+                return a.overagePercentage > b.overagePercentage
+            }
+            return a.name < b.name
+        }
         
         // Calculate overall score (0-100)
         let totalRules = rules.count
@@ -261,6 +309,7 @@ class BudgetAnalysisService {
         return BudgetAnalysisResult(
             rules: rules,
             breachedRules: breachedRules,
+            categories: categories,
             overallScore: overallScore,
             summary: summary,
             isHCOL: isHCOL,

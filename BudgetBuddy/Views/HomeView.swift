@@ -11,6 +11,31 @@ struct HomeView: View {
     @State private var showNeighborhoodComparison = false
     @State private var tempNetIncome: String = ""
     @State private var isEditingIncome = false
+    @State private var showCOLInfo = false
+    
+    private func calculateTotalExpenses() -> Double {
+        let housing = Double(monthlyExpensesViewModel.housing) ?? 0
+        let transportation = Double(monthlyExpensesViewModel.transportation) ?? 0
+        let carPayment = Double(monthlyExpensesViewModel.carPayment) ?? 0
+        let carInsurance = Double(monthlyExpensesViewModel.carInsurance) ?? 0
+        let carMaintenance = Double(monthlyExpensesViewModel.carMaintenance) ?? 0
+        let groceries = Double(monthlyExpensesViewModel.groceries) ?? 0
+        let subscriptions = Double(monthlyExpensesViewModel.subscriptions) ?? 0
+        let otherExpenses = Double(monthlyExpensesViewModel.otherExpenses) ?? 0
+        let savings = Double(monthlyExpensesViewModel.savings) ?? 0
+        let dependent = monthlyExpensesViewModel.showDependentExpenses ? (Double(monthlyExpensesViewModel.dependentExpenses) ?? 0) : 0
+        
+        return housing + transportation + carPayment + carInsurance + carMaintenance + groceries + subscriptions + otherExpenses + savings + dependent
+    }
+    
+    private func getBalanceInfo() -> (totalExpenses: Double, monthlyNetIncome: Double, remainingBalance: Double, isOverspending: Bool) {
+        let totalExpenses = calculateTotalExpenses()
+        let monthlyNetIncome = Double(profileViewModel.monthlyNetIncome) ?? 0
+        let remainingBalance = monthlyNetIncome - totalExpenses
+        let isOverspending = remainingBalance < 0
+        
+        return (totalExpenses, monthlyNetIncome, remainingBalance, isOverspending)
+    }
     
     var body: some View {
         NavigationView {
@@ -76,25 +101,50 @@ struct HomeView: View {
                                     Divider()
                                         .padding(.vertical, 8)
                                     
+                                    let balanceForLegend = getBalanceInfo()
+                                    
+                                    // Warning message if overspending (inside legend)
+                                    if balanceForLegend.isOverspending && balanceForLegend.totalExpenses > 0 {
+                                        VStack(alignment: .leading, spacing: 8) {
+                                            HStack(spacing: 8) {
+                                                Image(systemName: "exclamationmark.triangle.fill")
+                                                    .foregroundColor(.red)
+                                                    .font(.system(size: 16))
+                                                
+                                                Text("You spend more than you make")
+                                                    .font(.system(size: 14, weight: .semibold))
+                                                    .foregroundColor(.red)
+                                            }
+                                            
+                                            Text("Verify your expenses and lower spending to stay within your monthly net income of $\(String(format: "%.2f", balanceForLegend.monthlyNetIncome))")
+                                                .font(.system(size: 12))
+                                                .foregroundColor(Color(red: 0.35, green: 0.40, blue: 0.50))
+                                        }
+                                        .padding(12)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .background(Color(red: 1, green: 0.9, blue: 0.9))
+                                        .cornerRadius(8)
+                                    }
+                                    
                                     HStack {
                                         HStack(spacing: 8) {
                                             Circle()
-                                                .fill(Color(red: 0.85, green: 0.95, blue: 0.85))
+                                                .fill(balanceForLegend.isOverspending ? Color(red: 1, green: 0.85, blue: 0.85) : Color(red: 0.85, green: 0.95, blue: 0.85))
                                                 .frame(width: 12, height: 12)
                                             
                                             Text("Remaining")
                                                 .font(.system(size: 14, weight: .semibold))
-                                                .foregroundColor(Color(red: 0.20, green: 0.60, blue: 0.20))
+                                                .foregroundColor(balanceForLegend.isOverspending ? .red : Color(red: 0.20, green: 0.60, blue: 0.20))
                                         }
                                         
                                         Spacer()
                                         
-                                        Text(formatCurrency(calculateRemaining()))
+                                        Text("$\(String(format: "%.2f", balanceForLegend.remainingBalance))")
                                             .font(.system(size: 14, weight: .semibold))
-                                            .foregroundColor(Color(red: 0.20, green: 0.60, blue: 0.20))
+                                            .foregroundColor(balanceForLegend.isOverspending ? .red : Color(red: 0.20, green: 0.60, blue: 0.20))
                                     }
                                     .padding(12)
-                                    .background(Color(red: 0.95, green: 1.0, blue: 0.95))
+                                    .background(balanceForLegend.isOverspending ? Color(red: 1, green: 0.95, blue: 0.95) : Color(red: 0.95, green: 1.0, blue: 0.95))
                                     .cornerRadius(8)
                                 }
                                 
@@ -323,6 +373,79 @@ struct HomeView: View {
                             .background(Color.white)
                             .cornerRadius(16)
                             
+                            // Cost of Living Index
+                            if let colIndex = profileViewModel.demographicData?.costOfLivingIndex {
+                                VStack(alignment: .leading, spacing: 12) {
+                                    HStack(spacing: 8) {
+                                        Image(systemName: "chart.line.uptrend.xyaxis")
+                                            .font(.system(size: 16))
+                                            .foregroundColor(Color(red: 0.50, green: 0.70, blue: 1.0))
+                                        
+                                        Text("Cost of Living Index")
+                                            .font(.system(size: 14, weight: .semibold))
+                                            .foregroundColor(.black)
+                                        
+                                        Spacer()
+                                        
+                                        Button(action: { showCOLInfo = true }) {
+                                            Image(systemName: "info.circle.fill")
+                                                .font(.system(size: 16))
+                                                .foregroundColor(Color(red: 0.50, green: 0.70, blue: 1.0))
+                                        }
+                                    }
+                                    
+                                    VStack(alignment: .leading, spacing: 12) {
+                                        HStack {
+                                            VStack(alignment: .leading, spacing: 4) {
+                                                Text("Your Area Index")
+                                                    .font(.system(size: 12))
+                                                    .foregroundColor(Color(red: 0.35, green: 0.40, blue: 0.50))
+                                                
+                                                Text(String(format: "%.1f", colIndex))
+                                                    .font(.system(size: 20, weight: .bold))
+                                                    .foregroundColor(Color(red: 0.15, green: 0.20, blue: 0.35))
+                                            }
+                                            
+                                            Spacer()
+                                            
+                                            VStack(alignment: .trailing, spacing: 4) {
+                                                Text("USA Average: 100")
+                                                    .font(.system(size: 11))
+                                                    .foregroundColor(Color(red: 0.35, green: 0.40, blue: 0.50))
+                                                
+                                                let difference = colIndex - 100
+                                                let differenceText = String(format: "%+.1f", difference)
+                                                let differenceColor: Color = difference > 0 ? .red : Color(red: 0.20, green: 0.60, blue: 0.20)
+                                                
+                                                Text(differenceText)
+                                                    .font(.system(size: 16, weight: .bold))
+                                                    .foregroundColor(differenceColor)
+                                            }
+                                        }
+                                        .padding(12)
+                                        .background(Color(red: 0.98, green: 0.96, blue: 0.94))
+                                        .cornerRadius(8)
+                                        
+                                        HStack(spacing: 8) {
+                                            Image(systemName: "info.circle.fill")
+                                                .font(.system(size: 12))
+                                                .foregroundColor(Color(red: 0.50, green: 0.70, blue: 1.0))
+                                            
+                                            Text(colIndex > 100 ? "Your area has a higher cost of living than the national average." : "Your area has a lower cost of living than the national average.")
+                                                .font(.system(size: 11))
+                                                .foregroundColor(Color(red: 0.35, green: 0.40, blue: 0.50))
+                                                .lineLimit(nil)
+                                        }
+                                        .padding(12)
+                                        .background(Color(red: 0.95, green: 0.98, blue: 1.0))
+                                        .cornerRadius(8)
+                                    }
+                                }
+                                .padding(16)
+                                .background(Color.white)
+                                .cornerRadius(12)
+                            }
+                            
                             // AI Analysis Unlock Card
                             VStack(spacing: 16) {
                                 VStack(spacing: 12) {
@@ -462,6 +585,229 @@ struct HomeView: View {
                         }
                         .padding(20)
                     }
+                }
+                
+                // Cost of Living Info Popup (full screen overlay)
+                if showCOLInfo {
+                    ZStack {
+                        Color.black.opacity(0.4)
+                            .ignoresSafeArea()
+                            .transition(.opacity)
+                        
+                        VStack(alignment: .leading, spacing: 16) {
+                            HStack {
+                                Text("What is Cost of Living Index?")
+                                    .font(.system(size: 16, weight: .bold))
+                                    .foregroundColor(.black)
+                                
+                                Spacer()
+                                
+                                Button(action: { showCOLInfo = false }) {
+                                    Image(systemName: "xmark")
+                                        .font(.system(size: 14, weight: .semibold))
+                                        .foregroundColor(.black)
+                                }
+                            }
+                            
+                            VStack(alignment: .leading, spacing: 12) {
+                                Text("Definition")
+                                    .font(.system(size: 13, weight: .semibold))
+                                    .foregroundColor(Color(red: 0.15, green: 0.20, blue: 0.35))
+                                
+                                Text("The Cost of Living Index measures the relative expense of living in a specific area compared to a national baseline. An index of 100 represents the national average.")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(Color(red: 0.35, green: 0.40, blue: 0.50))
+                                    .lineLimit(nil)
+                            }
+                            
+                            VStack(alignment: .leading, spacing: 12) {
+                                Text("Nationwide Average Breakdown")
+                                    .font(.system(size: 13, weight: .semibold))
+                                    .foregroundColor(Color(red: 0.15, green: 0.20, blue: 0.35))
+                                
+                                VStack(alignment: .leading, spacing: 10) {
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        HStack {
+                                            VStack(alignment: .leading, spacing: 2) {
+                                                Text("Housing (28%)")
+                                                    .font(.system(size: 12, weight: .semibold))
+                                                    .foregroundColor(Color(red: 0.15, green: 0.20, blue: 0.35))
+                                                Text("Rent, property prices, home maintenance")
+                                                    .font(.system(size: 10))
+                                                    .foregroundColor(Color(red: 0.35, green: 0.40, blue: 0.50))
+                                            }
+                                            Spacer()
+                                            Text("$1,400/mo")
+                                                .font(.system(size: 12, weight: .semibold))
+                                                .foregroundColor(Color(red: 0.15, green: 0.20, blue: 0.35))
+                                        }
+                                    }
+                                    .padding(10)
+                                    .background(Color(red: 0.98, green: 0.96, blue: 0.94))
+                                    .cornerRadius(6)
+                                    
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        HStack {
+                                            VStack(alignment: .leading, spacing: 2) {
+                                                Text("Groceries & Food (12%)")
+                                                    .font(.system(size: 12, weight: .semibold))
+                                                    .foregroundColor(Color(red: 0.15, green: 0.20, blue: 0.35))
+                                                Text("Supermarket items, restaurant prices")
+                                                    .font(.system(size: 10))
+                                                    .foregroundColor(Color(red: 0.35, green: 0.40, blue: 0.50))
+                                            }
+                                            Spacer()
+                                            Text("$600/mo")
+                                                .font(.system(size: 12, weight: .semibold))
+                                                .foregroundColor(Color(red: 0.15, green: 0.20, blue: 0.35))
+                                        }
+                                    }
+                                    .padding(10)
+                                    .background(Color(red: 0.98, green: 0.96, blue: 0.94))
+                                    .cornerRadius(6)
+                                    
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        HStack {
+                                            VStack(alignment: .leading, spacing: 2) {
+                                                Text("Transportation (9%)")
+                                                    .font(.system(size: 12, weight: .semibold))
+                                                    .foregroundColor(Color(red: 0.15, green: 0.20, blue: 0.35))
+                                                Text("Gas, public transit, car insurance, maintenance")
+                                                    .font(.system(size: 10))
+                                                    .foregroundColor(Color(red: 0.35, green: 0.40, blue: 0.50))
+                                            }
+                                            Spacer()
+                                            Text("$450/mo")
+                                                .font(.system(size: 12, weight: .semibold))
+                                                .foregroundColor(Color(red: 0.15, green: 0.20, blue: 0.35))
+                                        }
+                                    }
+                                    .padding(10)
+                                    .background(Color(red: 0.98, green: 0.96, blue: 0.94))
+                                    .cornerRadius(6)
+                                    
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        HStack {
+                                            VStack(alignment: .leading, spacing: 2) {
+                                                Text("Utilities (8%)")
+                                                    .font(.system(size: 12, weight: .semibold))
+                                                    .foregroundColor(Color(red: 0.15, green: 0.20, blue: 0.35))
+                                                Text("Electricity, water, gas, internet, phone")
+                                                    .font(.system(size: 10))
+                                                    .foregroundColor(Color(red: 0.35, green: 0.40, blue: 0.50))
+                                            }
+                                            Spacer()
+                                            Text("$400/mo")
+                                                .font(.system(size: 12, weight: .semibold))
+                                                .foregroundColor(Color(red: 0.15, green: 0.20, blue: 0.35))
+                                        }
+                                    }
+                                    .padding(10)
+                                    .background(Color(red: 0.98, green: 0.96, blue: 0.94))
+                                    .cornerRadius(6)
+                                    
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        HStack {
+                                            VStack(alignment: .leading, spacing: 2) {
+                                                Text("Healthcare (5%)")
+                                                    .font(.system(size: 12, weight: .semibold))
+                                                    .foregroundColor(Color(red: 0.15, green: 0.20, blue: 0.35))
+                                                Text("Doctor visits, prescriptions, insurance")
+                                                    .font(.system(size: 10))
+                                                    .foregroundColor(Color(red: 0.35, green: 0.40, blue: 0.50))
+                                            }
+                                            Spacer()
+                                            Text("$250/mo")
+                                                .font(.system(size: 12, weight: .semibold))
+                                                .foregroundColor(Color(red: 0.15, green: 0.20, blue: 0.35))
+                                        }
+                                    }
+                                    .padding(10)
+                                    .background(Color(red: 0.98, green: 0.96, blue: 0.94))
+                                    .cornerRadius(6)
+                                }
+                            }
+                            
+                            if let colIndex = profileViewModel.demographicData?.costOfLivingIndex, colIndex > 100 {
+                                VStack(alignment: .leading, spacing: 12) {
+                                    Text("What's Higher in Your Area")
+                                        .font(.system(size: 13, weight: .semibold))
+                                        .foregroundColor(Color(red: 0.15, green: 0.20, blue: 0.35))
+                                    
+                                    let difference = colIndex - 100
+                                    let percentageHigher = String(format: "%.1f", difference)
+                                    
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        HStack(spacing: 8) {
+                                            Image(systemName: "arrow.up.right")
+                                                .font(.system(size: 12, weight: .semibold))
+                                                .foregroundColor(.red)
+                                            
+                                            VStack(alignment: .leading, spacing: 2) {
+                                                Text("Your area is \(percentageHigher)% higher than national average")
+                                                    .font(.system(size: 12, weight: .semibold))
+                                                    .foregroundColor(Color(red: 0.15, green: 0.20, blue: 0.35))
+                                                
+                                                Text("Primary drivers: Housing and utilities typically cost more in high-cost areas")
+                                                    .font(.system(size: 11))
+                                                    .foregroundColor(Color(red: 0.35, green: 0.40, blue: 0.50))
+                                            }
+                                        }
+                                        .padding(10)
+                                        .background(Color(red: 1.0, green: 0.95, blue: 0.95))
+                                        .cornerRadius(6)
+                                    }
+                                }
+                            }
+                            
+                            VStack(alignment: .leading, spacing: 12) {
+                                Text("How to Interpret")
+                                    .font(.system(size: 13, weight: .semibold))
+                                    .foregroundColor(Color(red: 0.15, green: 0.20, blue: 0.35))
+                                
+                                HStack(spacing: 8) {
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text("Index > 100")
+                                            .font(.system(size: 12, weight: .semibold))
+                                            .foregroundColor(.red)
+                                        Text("Higher than average")
+                                            .font(.system(size: 11))
+                                            .foregroundColor(Color(red: 0.35, green: 0.40, blue: 0.50))
+                                    }
+                                    
+                                    Spacer()
+                                    
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text("Index = 100")
+                                            .font(.system(size: 12, weight: .semibold))
+                                            .foregroundColor(Color(red: 0.95, green: 0.70, blue: 0.65))
+                                        Text("National average")
+                                            .font(.system(size: 11))
+                                            .foregroundColor(Color(red: 0.35, green: 0.40, blue: 0.50))
+                                    }
+                                    
+                                    Spacer()
+                                    
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text("Index < 100")
+                                            .font(.system(size: 12, weight: .semibold))
+                                            .foregroundColor(Color(red: 0.20, green: 0.60, blue: 0.20))
+                                        Text("Lower than average")
+                                            .font(.system(size: 11))
+                                            .foregroundColor(Color(red: 0.35, green: 0.40, blue: 0.50))
+                                    }
+                                }
+                            }
+                            
+                            Spacer()
+                        }
+                        .padding(20)
+                        .background(Color.white)
+                        .cornerRadius(16)
+                        .padding(20)
+                        .transition(.scale(scale: 0.8).combined(with: .opacity))
+                    }
+                    .animation(.easeInOut(duration: 0.3), value: showCOLInfo)
                 }
             }
             .sheet(isPresented: $isEditingExpenses) {

@@ -40,7 +40,13 @@ struct NeighborhoodComparisonView: View {
                     
                     ScrollView {
                         VStack(spacing: 20) {
-                            if let comparison = getComparison() {
+                            if let demographics = profileViewModel.demographicData,
+                               let zipcodeData = profileViewModel.zipcodeData {
+                                let userIncome = Double(profileViewModel.monthlyNetIncome) ?? 0
+                                let userHousing = Double(monthlyExpensesViewModel.housing) ?? 0
+                                let neighborhoodIncome = (demographics.medianHouseholdIncome / 12) * 0.70
+                                let neighborhoodRent = demographics.averageRent
+                                
                                 // Neighborhood Info
                                 VStack(alignment: .leading, spacing: 12) {
                                     HStack(spacing: 8) {
@@ -49,11 +55,11 @@ struct NeighborhoodComparisonView: View {
                                             .foregroundColor(Color(red: 0.15, green: 0.20, blue: 0.35))
                                         
                                         VStack(alignment: .leading, spacing: 2) {
-                                            Text("\(comparison.neighborhood.city), \(comparison.neighborhood.state)")
+                                            Text("\(zipcodeData.city), \(zipcodeData.state)")
                                                 .font(.system(size: 14, weight: .semibold))
                                                 .foregroundColor(.black)
                                             
-                                            Text("Zipcode: \(comparison.neighborhood.zipcode)")
+                                            Text("Zipcode: \(zipcodeData.zipcode)")
                                                 .font(.system(size: 12))
                                                 .foregroundColor(Color(red: 0.35, green: 0.40, blue: 0.50))
                                         }
@@ -73,22 +79,29 @@ struct NeighborhoodComparisonView: View {
                                     
                                     ComparisonRow(
                                         label: "Your Monthly Net Income",
-                                        value: formatCurrency(comparison.userIncome),
+                                        value: formatCurrency(userIncome),
                                         color: Color(red: 0.15, green: 0.20, blue: 0.35)
                                     )
                                     
                                     ComparisonRow(
                                         label: "Neighborhood Median",
-                                        value: formatCurrency(comparison.neighborhood.medianMonthlyNetIncome),
+                                        value: formatCurrency(neighborhoodIncome),
                                         color: Color(red: 0.35, green: 0.40, blue: 0.50)
                                     )
                                     
                                     Divider()
                                         .padding(.vertical, 8)
                                     
-                                    Text(comparison.incomeStatus)
-                                        .font(.system(size: 12))
-                                        .foregroundColor(Color(red: 0.35, green: 0.40, blue: 0.50))
+                                    let incomeDiff = userIncome - neighborhoodIncome
+                                    if incomeDiff > 0 {
+                                        Text("You earn \(formatCurrency(incomeDiff))/month more than the neighborhood median")
+                                            .font(.system(size: 12))
+                                            .foregroundColor(Color(red: 0.35, green: 0.40, blue: 0.50))
+                                    } else {
+                                        Text("You earn \(formatCurrency(abs(incomeDiff)))/month less than the neighborhood median")
+                                            .font(.system(size: 12))
+                                            .foregroundColor(Color(red: 0.35, green: 0.40, blue: 0.50))
+                                    }
                                 }
                                 .padding(16)
                                 .background(Color.white)
@@ -102,22 +115,29 @@ struct NeighborhoodComparisonView: View {
                                     
                                     ComparisonRow(
                                         label: "Your Housing Cost",
-                                        value: formatCurrency(comparison.userHousingCost),
+                                        value: formatCurrency(userHousing),
                                         color: Color(red: 0.95, green: 0.70, blue: 0.65)
                                     )
                                     
                                     ComparisonRow(
                                         label: "Neighborhood Median",
-                                        value: formatCurrency(comparison.neighborhood.medianHousingCost),
+                                        value: formatCurrency(neighborhoodRent),
                                         color: Color(red: 0.35, green: 0.40, blue: 0.50)
                                     )
                                     
                                     Divider()
                                         .padding(.vertical, 8)
                                     
-                                    Text(comparison.housingStatus)
-                                        .font(.system(size: 12))
-                                        .foregroundColor(Color(red: 0.35, green: 0.40, blue: 0.50))
+                                    let housingDiff = userHousing - neighborhoodRent
+                                    if housingDiff > 0 {
+                                        Text("You spend \(formatCurrency(housingDiff)) more on housing than the neighborhood median")
+                                            .font(.system(size: 12))
+                                            .foregroundColor(Color(red: 0.35, green: 0.40, blue: 0.50))
+                                    } else {
+                                        Text("You spend \(formatCurrency(abs(housingDiff))) less on housing than the neighborhood median")
+                                            .font(.system(size: 12))
+                                            .foregroundColor(Color(red: 0.35, green: 0.40, blue: 0.50))
+                                    }
                                 }
                                 .padding(16)
                                 .background(Color.white)
@@ -129,24 +149,34 @@ struct NeighborhoodComparisonView: View {
                                         .font(.system(size: 14, weight: .semibold))
                                         .foregroundColor(.black)
                                     
+                                    let userPercentage = userIncome > 0 ? (userHousing / userIncome) * 100 : 0
+                                    let neighborhoodPercentage = neighborhoodIncome > 0 ? (neighborhoodRent / neighborhoodIncome) * 100 : 0
+                                    
                                     ComparisonRow(
                                         label: "Your Percentage",
-                                        value: String(format: "%.1f%%", comparison.userHousingPercentage),
+                                        value: String(format: "%.1f%%", userPercentage),
                                         color: Color(red: 0.95, green: 0.70, blue: 0.65)
                                     )
                                     
                                     ComparisonRow(
                                         label: "Neighborhood Average",
-                                        value: String(format: "%.1f%%", comparison.neighborhood.averageHousingPercentage),
+                                        value: String(format: "%.1f%%", neighborhoodPercentage),
                                         color: Color(red: 0.35, green: 0.40, blue: 0.50)
                                     )
                                     
                                     Divider()
                                         .padding(.vertical, 8)
                                     
-                                    Text(comparison.percentageStatus)
-                                        .font(.system(size: 12))
-                                        .foregroundColor(Color(red: 0.35, green: 0.40, blue: 0.50))
+                                    let percentageDiff = userPercentage - neighborhoodPercentage
+                                    if percentageDiff > 0 {
+                                        Text("Your housing is \(String(format: "%.1f%%", percentageDiff)) higher than the neighborhood average")
+                                            .font(.system(size: 12))
+                                            .foregroundColor(Color(red: 0.35, green: 0.40, blue: 0.50))
+                                    } else {
+                                        Text("Your housing is \(String(format: "%.1f%%", abs(percentageDiff))) lower than the neighborhood average")
+                                            .font(.system(size: 12))
+                                            .foregroundColor(Color(red: 0.35, green: 0.40, blue: 0.50))
+                                    }
                                 }
                                 .padding(16)
                                 .background(Color.white)
@@ -165,13 +195,15 @@ struct NeighborhoodComparisonView: View {
                                     }
                                     
                                     VStack(alignment: .leading, spacing: 8) {
-                                        if comparison.percentageDifference > 5 {
+                                        let percentageDiff = (userIncome > 0 ? (userHousing / userIncome) * 100 : 0) - (neighborhoodIncome > 0 ? (neighborhoodRent / neighborhoodIncome) * 100 : 0)
+                                        
+                                        if percentageDiff > 5 {
                                             InsightRow(
                                                 icon: "exclamationmark.circle.fill",
                                                 color: Color(red: 0.95, green: 0.70, blue: 0.65),
                                                 text: "Your housing costs are significantly higher than your neighborhood. Consider finding more affordable housing."
                                             )
-                                        } else if comparison.percentageDifference > 0 {
+                                        } else if percentageDiff > 0 {
                                             InsightRow(
                                                 icon: "info.circle.fill",
                                                 color: Color(red: 0.95, green: 0.85, blue: 0.60),
@@ -200,7 +232,7 @@ struct NeighborhoodComparisonView: View {
                                         .font(.system(size: 16, weight: .bold))
                                         .foregroundColor(.black)
                                     
-                                    Text("We don't have neighborhood data for your zipcode yet.")
+                                    Text("Please verify your zipcode to see neighborhood comparison data.")
                                         .font(.system(size: 14))
                                         .foregroundColor(Color(red: 0.35, green: 0.40, blue: 0.50))
                                         .multilineTextAlignment(.center)

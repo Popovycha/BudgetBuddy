@@ -57,91 +57,49 @@ class MonthlyExpensesViewModel: ObservableObject {
         isLoading = true
         errorMessage = nil
         
-        // Validate housing
-        guard !housing.isEmpty, let housingAmount = Double(housing), housingAmount >= 0 else {
-            errorMessage = "Please enter a valid housing expense"
+        // Parse all expenses as optional (allow blank fields)
+        let housingAmount = Double(housing) ?? 0
+        let transportAmount = Double(transportation) ?? 0
+        let carPaymentAmount = Double(carPayment) ?? 0
+        let carInsuranceAmount = Double(carInsurance) ?? 0
+        let carMaintenanceAmount = Double(carMaintenance) ?? 0
+        let groceriesAmount = Double(groceries) ?? 0
+        let subscriptionsAmount = Double(subscriptions) ?? 0
+        let otherAmount = Double(otherExpenses) ?? 0
+        let savingsAmount = Double(savings) ?? 0
+        
+        // Validate all amounts are non-negative
+        let allAmounts = [housingAmount, transportAmount, carPaymentAmount, carInsuranceAmount, 
+                         carMaintenanceAmount, groceriesAmount, subscriptionsAmount, otherAmount, savingsAmount]
+        
+        if allAmounts.contains(where: { $0 < 0 }) {
+            errorMessage = "Expenses cannot be negative"
             isLoading = false
             return
         }
         
-        // Validate transportation
-        guard !transportation.isEmpty, let transportAmount = Double(transportation), transportAmount >= 0 else {
-            errorMessage = "Please enter a valid transportation expense"
-            isLoading = false
-            return
-        }
-        
-        // Validate car payment
-        guard !carPayment.isEmpty, let carPaymentAmount = Double(carPayment), carPaymentAmount >= 0 else {
-            errorMessage = "Please enter a valid car payment"
-            isLoading = false
-            return
-        }
-        
-        // Validate car insurance
-        guard !carInsurance.isEmpty, let carInsuranceAmount = Double(carInsurance), carInsuranceAmount >= 0 else {
-            errorMessage = "Please enter a valid car insurance amount"
-            isLoading = false
-            return
-        }
-        
-        // Validate car maintenance
-        guard !carMaintenance.isEmpty, let carMaintenanceAmount = Double(carMaintenance), carMaintenanceAmount >= 0 else {
-            errorMessage = "Please enter a valid car maintenance amount"
-            isLoading = false
-            return
-        }
-        
-        // Validate groceries
-        guard !groceries.isEmpty, let groceriesAmount = Double(groceries), groceriesAmount >= 0 else {
-            errorMessage = "Please enter a valid groceries expense"
-            isLoading = false
-            return
-        }
-        
-        // Validate subscriptions
-        guard !subscriptions.isEmpty, let subscriptionsAmount = Double(subscriptions), subscriptionsAmount >= 0 else {
-            errorMessage = "Please enter a valid subscriptions expense"
-            isLoading = false
-            return
-        }
-        
-        // Validate other expenses
-        guard !otherExpenses.isEmpty, let otherAmount = Double(otherExpenses), otherAmount >= 0 else {
-            errorMessage = "Please enter a valid other expenses amount"
-            isLoading = false
-            return
-        }
-        
-        // Validate savings
-        guard !savings.isEmpty, let savingsAmount = Double(savings), savingsAmount >= 0 else {
-            errorMessage = "Please enter a valid savings amount"
-            isLoading = false
-            return
-        }
-        
-        // Validate dependent expenses if shown
+        // Parse dependent expenses if shown
         var dependentAmount: Double? = nil
         if showDependentExpenses {
-            guard !dependentExpenses.isEmpty, let depAmount = Double(dependentExpenses), depAmount >= 0 else {
-                errorMessage = "Please enter a valid dependent expense"
+            dependentAmount = Double(dependentExpenses) ?? 0
+            if let depAmount = dependentAmount, depAmount < 0 {
+                errorMessage = "Dependent expenses cannot be negative"
                 isLoading = false
                 return
             }
-            dependentAmount = depAmount
         }
         
         // Create or update expenses
         var expenses = monthlyExpenses ?? MonthlyExpenses(userId: userId)
-        expenses.housing = housingAmount
-        expenses.transportation = transportAmount
-        expenses.carPayment = carPaymentAmount
-        expenses.carInsurance = carInsuranceAmount
-        expenses.carMaintenance = carMaintenanceAmount
-        expenses.groceries = groceriesAmount
-        expenses.subscriptions = subscriptionsAmount
-        expenses.otherExpenses = otherAmount
-        expenses.savings = savingsAmount
+        expenses.housing = housingAmount > 0 ? housingAmount : nil
+        expenses.transportation = transportAmount > 0 ? transportAmount : nil
+        expenses.carPayment = carPaymentAmount > 0 ? carPaymentAmount : nil
+        expenses.carInsurance = carInsuranceAmount > 0 ? carInsuranceAmount : nil
+        expenses.carMaintenance = carMaintenanceAmount > 0 ? carMaintenanceAmount : nil
+        expenses.groceries = groceriesAmount > 0 ? groceriesAmount : nil
+        expenses.subscriptions = subscriptionsAmount > 0 ? subscriptionsAmount : nil
+        expenses.otherExpenses = otherAmount > 0 ? otherAmount : nil
+        expenses.savings = savingsAmount > 0 ? savingsAmount : nil
         expenses.dependentExpenses = dependentAmount
         expenses.updatedAt = Date()
         
