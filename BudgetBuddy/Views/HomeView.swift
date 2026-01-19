@@ -500,6 +500,36 @@ struct HomeView: View {
                 monthlyExpensesViewModel.loadExpenses(userId: userId)
             }
         }
+        .onChange(of: profileViewModel.monthlyNetIncome) { _ in
+            refreshBudgetAnalysis()
+        }
+        .onChange(of: monthlyExpensesViewModel.housing) { _ in
+            refreshBudgetAnalysis()
+        }
+        .onChange(of: monthlyExpensesViewModel.transportation) { _ in
+            refreshBudgetAnalysis()
+        }
+        .onChange(of: monthlyExpensesViewModel.carPayment) { _ in
+            refreshBudgetAnalysis()
+        }
+        .onChange(of: monthlyExpensesViewModel.carInsurance) { _ in
+            refreshBudgetAnalysis()
+        }
+        .onChange(of: monthlyExpensesViewModel.carMaintenance) { _ in
+            refreshBudgetAnalysis()
+        }
+        .onChange(of: monthlyExpensesViewModel.groceries) { _ in
+            refreshBudgetAnalysis()
+        }
+        .onChange(of: monthlyExpensesViewModel.subscriptions) { _ in
+            refreshBudgetAnalysis()
+        }
+        .onChange(of: monthlyExpensesViewModel.otherExpenses) { _ in
+            refreshBudgetAnalysis()
+        }
+        .onChange(of: monthlyExpensesViewModel.savings) { _ in
+            refreshBudgetAnalysis()
+        }
     }
     
     private func calculateRemaining() -> Double {
@@ -548,6 +578,23 @@ struct HomeView: View {
         let wants = subscriptions + otherExpenses
         guard income > 0 else { return 0 }
         return (wants / income) * 100
+    }
+    
+    private func refreshBudgetAnalysis() {
+        budgetAnalysisViewModel.analyzeBudget(
+            monthlyNetIncome: profileViewModel.monthlyNetIncome,
+            housing: monthlyExpensesViewModel.housing,
+            transportation: monthlyExpensesViewModel.transportation,
+            carPayment: monthlyExpensesViewModel.carPayment,
+            carInsurance: monthlyExpensesViewModel.carInsurance,
+            carMaintenance: monthlyExpensesViewModel.carMaintenance,
+            groceries: monthlyExpensesViewModel.groceries,
+            subscriptions: monthlyExpensesViewModel.subscriptions,
+            otherExpenses: monthlyExpensesViewModel.otherExpenses,
+            savings: monthlyExpensesViewModel.savings,
+            zipcode: profileViewModel.zipCode,
+            city: profileViewModel.location
+        )
     }
     
     private func formatCurrency(_ value: Double) -> String {

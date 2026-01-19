@@ -57,78 +57,21 @@ class MonthlyExpensesViewModel: ObservableObject {
         isLoading = true
         errorMessage = nil
         
-        // Validate housing
-        guard !housing.isEmpty, let housingAmount = Double(housing), housingAmount >= 0 else {
-            errorMessage = "Please enter a valid housing expense"
-            isLoading = false
-            return
-        }
+        // Convert all expenses to Double, defaulting to 0 if empty
+        let housingAmount = Double(housing.isEmpty ? "0" : housing) ?? 0
+        let transportAmount = Double(transportation.isEmpty ? "0" : transportation) ?? 0
+        let carPaymentAmount = Double(carPayment.isEmpty ? "0" : carPayment) ?? 0
+        let carInsuranceAmount = Double(carInsurance.isEmpty ? "0" : carInsurance) ?? 0
+        let carMaintenanceAmount = Double(carMaintenance.isEmpty ? "0" : carMaintenance) ?? 0
+        let groceriesAmount = Double(groceries.isEmpty ? "0" : groceries) ?? 0
+        let subscriptionsAmount = Double(subscriptions.isEmpty ? "0" : subscriptions) ?? 0
+        let otherAmount = Double(otherExpenses.isEmpty ? "0" : otherExpenses) ?? 0
+        let savingsAmount = Double(savings.isEmpty ? "0" : savings) ?? 0
         
-        // Validate transportation
-        guard !transportation.isEmpty, let transportAmount = Double(transportation), transportAmount >= 0 else {
-            errorMessage = "Please enter a valid transportation expense"
-            isLoading = false
-            return
-        }
-        
-        // Validate car payment
-        guard !carPayment.isEmpty, let carPaymentAmount = Double(carPayment), carPaymentAmount >= 0 else {
-            errorMessage = "Please enter a valid car payment"
-            isLoading = false
-            return
-        }
-        
-        // Validate car insurance
-        guard !carInsurance.isEmpty, let carInsuranceAmount = Double(carInsurance), carInsuranceAmount >= 0 else {
-            errorMessage = "Please enter a valid car insurance amount"
-            isLoading = false
-            return
-        }
-        
-        // Validate car maintenance
-        guard !carMaintenance.isEmpty, let carMaintenanceAmount = Double(carMaintenance), carMaintenanceAmount >= 0 else {
-            errorMessage = "Please enter a valid car maintenance amount"
-            isLoading = false
-            return
-        }
-        
-        // Validate groceries
-        guard !groceries.isEmpty, let groceriesAmount = Double(groceries), groceriesAmount >= 0 else {
-            errorMessage = "Please enter a valid groceries expense"
-            isLoading = false
-            return
-        }
-        
-        // Validate subscriptions
-        guard !subscriptions.isEmpty, let subscriptionsAmount = Double(subscriptions), subscriptionsAmount >= 0 else {
-            errorMessage = "Please enter a valid subscriptions expense"
-            isLoading = false
-            return
-        }
-        
-        // Validate other expenses
-        guard !otherExpenses.isEmpty, let otherAmount = Double(otherExpenses), otherAmount >= 0 else {
-            errorMessage = "Please enter a valid other expenses amount"
-            isLoading = false
-            return
-        }
-        
-        // Validate savings
-        guard !savings.isEmpty, let savingsAmount = Double(savings), savingsAmount >= 0 else {
-            errorMessage = "Please enter a valid savings amount"
-            isLoading = false
-            return
-        }
-        
-        // Validate dependent expenses if shown
+        // Handle dependent expenses
         var dependentAmount: Double? = nil
         if showDependentExpenses {
-            guard !dependentExpenses.isEmpty, let depAmount = Double(dependentExpenses), depAmount >= 0 else {
-                errorMessage = "Please enter a valid dependent expense"
-                isLoading = false
-                return
-            }
-            dependentAmount = depAmount
+            dependentAmount = Double(dependentExpenses.isEmpty ? "0" : dependentExpenses) ?? 0
         }
         
         // Create or update expenses
@@ -148,6 +91,53 @@ class MonthlyExpensesViewModel: ObservableObject {
         // Save to local storage
         storageService.saveMonthlyExpenses(expenses)
         self.monthlyExpenses = expenses
+        
+        // Save to Supabase
+        // Always try to insert first, if it fails (duplicate key), then update
+        SupabaseService.shared.saveMonthlyExpenses(
+            userId: userId,
+            housing: housingAmount,
+            transportation: transportAmount,
+            carPayment: carPaymentAmount,
+            carInsurance: carInsuranceAmount,
+            carMaintenance: carMaintenanceAmount,
+            groceries: groceriesAmount,
+            subscriptions: subscriptionsAmount,
+            otherExpenses: otherAmount,
+            savings: savingsAmount,
+            dependentExpenses: dependentAmount ?? 0
+        ) { result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success:
+                    print("Expenses saved to Supabase successfully")
+                case .failure(let error):
+                    // If insert fails (likely duplicate), try update
+                    print("Insert failed, attempting update: \(error)")
+                    SupabaseService.shared.updateMonthlyExpenses(
+                        userId: userId,
+                        housing: housingAmount,
+                        transportation: transportAmount,
+                        carPayment: carPaymentAmount,
+                        carInsurance: carInsuranceAmount,
+                        carMaintenance: carMaintenanceAmount,
+                        groceries: groceriesAmount,
+                        subscriptions: subscriptionsAmount,
+                        otherExpenses: otherAmount,
+                        savings: savingsAmount,
+                        dependentExpenses: dependentAmount
+                    ) { updateResult in
+                        DispatchQueue.main.async {
+                            if case .failure(let updateError) = updateResult {
+                                print("Error updating expenses in Supabase: \(updateError)")
+                            } else {
+                                print("Expenses updated to Supabase successfully")
+                            }
+                        }
+                    }
+                }
+            }
+        }
         
         isLoading = false
     }

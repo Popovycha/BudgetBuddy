@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Supabase
 
 @main
 struct BudgetBuddyApp: App {
@@ -13,21 +14,28 @@ struct BudgetBuddyApp: App {
     @StateObject private var profileViewModel = ProfileViewModel()
     @StateObject private var monthlyExpensesViewModel = MonthlyExpensesViewModel()
     
+    private let supabase = SupabaseClient(
+        supabaseURL: URL(string: "https://stawhbhqkcstsmqjkquz.supabase.co")!,
+        supabaseKey: "sb_publishable_me9hrng2DpDHGeNBMHsdTw_R-0eyDKN"
+    )
+    
     var body: some Scene {
         WindowGroup {
-            if authViewModel.isAuthenticated {
-                HomeView(
-                    authViewModel: authViewModel,
-                    profileViewModel: profileViewModel,
-                    monthlyExpensesViewModel: monthlyExpensesViewModel
-                )
-            } else if authViewModel.showProfileSetup {
-                ProfileSetupView(
-                    profileViewModel: profileViewModel,
-                    authViewModel: authViewModel
-                )
-            } else {
-                WelcomeScreenView(authViewModel: authViewModel)
+            ZStack {
+                if authViewModel.isAuthenticated {
+                    HomeView(
+                        authViewModel: authViewModel,
+                        profileViewModel: profileViewModel,
+                        monthlyExpensesViewModel: monthlyExpensesViewModel
+                    )
+                } else if authViewModel.showProfileSetup {
+                    ProfileSetupView(
+                        profileViewModel: profileViewModel,
+                        authViewModel: authViewModel
+                    )
+                } else {
+                    WelcomeScreenView(authViewModel: authViewModel)
+                }
             }
         }
     }

@@ -6,6 +6,8 @@ struct RegistrationView: View {
     @State private var password = ""
     @State private var firstName = ""
     @State private var lastName = ""
+    @State private var showPassword = false
+    @FocusState private var focusedField: TextFieldFocus?
     @Environment(\.presentationMode) var presentationMode
     
     var body: some View {
@@ -79,7 +81,8 @@ struct RegistrationView: View {
                                     RoundedRectangle(cornerRadius: 8)
                                         .stroke(Color(red: 0.90, green: 0.85, blue: 0.82), lineWidth: 1)
                                 )
-                                .submitLabel(.next)
+                                .focused($focusedField, equals: .firstName)
+                                .textFieldNextButton(focus: $focusedField, currentField: .firstName, nextField: .lastName)
                         }
                         
                         // Last name field
@@ -97,7 +100,8 @@ struct RegistrationView: View {
                                     RoundedRectangle(cornerRadius: 8)
                                         .stroke(Color(red: 0.90, green: 0.85, blue: 0.82), lineWidth: 1)
                                 )
-                                .submitLabel(.next)
+                                .focused($focusedField, equals: .lastName)
+                                .textFieldNextButton(focus: $focusedField, currentField: .lastName, nextField: .email)
                         }
                         
                         // Email field
@@ -117,7 +121,8 @@ struct RegistrationView: View {
                                     RoundedRectangle(cornerRadius: 8)
                                         .stroke(Color(red: 0.90, green: 0.85, blue: 0.82), lineWidth: 1)
                                 )
-                                .submitLabel(.next)
+                                .focused($focusedField, equals: .email)
+                                .textFieldNextButton(focus: $focusedField, currentField: .email, nextField: .password)
                         }
                         
                         // Password field
@@ -126,16 +131,30 @@ struct RegistrationView: View {
                                 .font(.system(size: 14, weight: .semibold))
                                 .foregroundColor(.black)
                             
-                            SecureField("Enter your password", text: $password)
-                                .textContentType(.newPassword)
-                                .padding(12)
-                                .background(Color.white)
-                                .cornerRadius(8)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 8)
-                                        .stroke(Color(red: 0.90, green: 0.85, blue: 0.82), lineWidth: 1)
-                                )
-                                .submitLabel(.done)
+                            HStack {
+                                if showPassword {
+                                    TextField("Enter your password", text: $password)
+                                        .textContentType(.newPassword)
+                                        .focused($focusedField, equals: .password)
+                                } else {
+                                    SecureField("Enter your password", text: $password)
+                                        .textContentType(.newPassword)
+                                        .focused($focusedField, equals: .password)
+                                }
+                                
+                                Button(action: { showPassword.toggle() }) {
+                                    Image(systemName: showPassword ? "eye.fill" : "eye.slash.fill")
+                                        .foregroundColor(Color(red: 0.35, green: 0.40, blue: 0.50))
+                                }
+                            }
+                            .padding(12)
+                            .background(Color.white)
+                            .cornerRadius(8)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(Color(red: 0.90, green: 0.85, blue: 0.82), lineWidth: 1)
+                            )
+                            .textFieldNextButton(focus: $focusedField, currentField: .password, nextField: nil)
                         }
                         
                         // Create Account button

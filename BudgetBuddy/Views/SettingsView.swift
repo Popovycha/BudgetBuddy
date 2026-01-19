@@ -145,9 +145,9 @@ struct SettingsView: View {
                         }
                         .padding(.horizontal, 16)
                         
-                        // Close Button
+                        // Sign Out Button
                         Button(action: { showSignOutAlert = true }) {
-                            Text("Close")
+                            Text("Sign Out")
                                 .font(.system(size: 14, weight: .semibold))
                                 .frame(maxWidth: .infinity)
                                 .padding(14)
@@ -191,6 +191,7 @@ struct EditProfileView: View {
     @State private var dateOfBirth = Date()
     @State private var zipcode = ""
     @State private var isSaving = false
+    @FocusState private var focusedField: TextFieldFocus?
     
     var body: some View {
         NavigationView {
@@ -238,7 +239,8 @@ struct EditProfileView: View {
                                     .background(Color.white)
                                     .cornerRadius(8)
                                     .font(.system(size: 14))
-                                    .submitLabel(.next)
+                                    .focused($focusedField, equals: .firstName)
+                                    .textFieldNextButton(focus: $focusedField, currentField: .firstName, nextField: .lastName)
                             }
                             
                             // Last Name
@@ -252,7 +254,8 @@ struct EditProfileView: View {
                                     .background(Color.white)
                                     .cornerRadius(8)
                                     .font(.system(size: 14))
-                                    .submitLabel(.next)
+                                    .focused($focusedField, equals: .lastName)
+                                    .textFieldNextButton(focus: $focusedField, currentField: .lastName, nextField: .email)
                             }
                             
                             // Email
@@ -267,7 +270,8 @@ struct EditProfileView: View {
                                     .cornerRadius(8)
                                     .font(.system(size: 14))
                                     .keyboardType(.emailAddress)
-                                    .submitLabel(.next)
+                                    .focused($focusedField, equals: .email)
+                                    .textFieldNextButton(focus: $focusedField, currentField: .email, nextField: .password)
                             }
                             
                             // Password
@@ -281,7 +285,8 @@ struct EditProfileView: View {
                                     .background(Color.white)
                                     .cornerRadius(8)
                                     .font(.system(size: 14))
-                                    .submitLabel(.next)
+                                    .focused($focusedField, equals: .password)
+                                    .textFieldNextButton(focus: $focusedField, currentField: .password, nextField: .zipCode)
                             }
                             
                             // Date of Birth
@@ -312,7 +317,8 @@ struct EditProfileView: View {
                                     .cornerRadius(8)
                                     .font(.system(size: 14))
                                     .keyboardType(.numberPad)
-                                    .submitLabel(.done)
+                                    .focused($focusedField, equals: .zipCode)
+                                    .textFieldNextButton(focus: $focusedField, currentField: .zipCode, nextField: nil)
                             }
                         }
                         .padding(20)
@@ -330,7 +336,12 @@ struct EditProfileView: View {
         firstName = authViewModel.currentUser?.firstName ?? ""
         lastName = authViewModel.currentUser?.lastName ?? ""
         email = authViewModel.currentUser?.email ?? ""
-        zipcode = profileViewModel.userProfile?.zipCode ?? ""
+        zipcode = profileViewModel.zipCode
+        
+        // If profile not loaded yet, load it
+        if profileViewModel.userProfile == nil, let userId = authViewModel.currentUser?.id {
+            profileViewModel.loadProfile(userId: userId)
+        }
     }
     
     private func saveProfile() {
