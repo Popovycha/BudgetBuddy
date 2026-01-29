@@ -44,7 +44,8 @@ struct NeighborhoodComparisonView: View {
                                let zipcodeData = profileViewModel.zipcodeData {
                                 let userIncome = Double(profileViewModel.monthlyNetIncome) ?? 0
                                 let userHousing = Double(monthlyExpensesViewModel.housing) ?? 0
-                                let neighborhoodIncome = (demographics.medianHouseholdIncome / 12) * 0.70
+                                // medianHouseholdIncome is already stored as monthly net
+                                let neighborhoodIncome = demographics.medianHouseholdIncome
                                 let neighborhoodRent = demographics.averageRent
                                 
                                 // Neighborhood Info

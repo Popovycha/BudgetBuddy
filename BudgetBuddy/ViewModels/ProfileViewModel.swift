@@ -107,6 +107,9 @@ class ProfileViewModel: ObservableObject {
     func verifyZipcode(_ zipcode: String) {
         zipcodeVerificationStatus = .verifying
         
+        // Clear cached data for this zipcode to ensure fresh fetch
+        demographicService.clearCache(for: zipcode)
+        
         zipcodeService.verifyZipcode(zipcode) { [weak self] verified in
             DispatchQueue.main.async {
                 guard let self = self else { return }
@@ -118,6 +121,11 @@ class ProfileViewModel: ObservableObject {
                     
                     self.demographicService.fetchLiveCensusData(for: zipcode) { [weak self] demographics in
                         DispatchQueue.main.async {
+                            if let demographics = demographics {
+                                print("ProfileViewModel: Received demographic data for \(zipcode) - COL Index: \(String(format: "%.1f", demographics.costOfLivingIndex))")
+                            } else {
+                                print("ProfileViewModel: No demographic data received for \(zipcode)")
+                            }
                             self?.demographicData = demographics
                             self?.zipcodeVerificationStatus = .verified
                         }

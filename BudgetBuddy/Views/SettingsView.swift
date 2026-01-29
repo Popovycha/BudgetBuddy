@@ -336,12 +336,21 @@ struct EditProfileView: View {
     private func saveProfile() {
         isSaving = true
         
+        // Check if zipcode changed
+        let oldZipcode = profileViewModel.userProfile?.zipCode ?? ""
+        let zipcodeChanged = zipcode != oldZipcode && !zipcode.isEmpty
+        
         // Update profile view model with zipcode
         profileViewModel.zipCode = zipcode
         
         // Save to local storage
         if let userId = profileViewModel.userProfile?.userId {
             profileViewModel.saveProfile(userId: userId)
+        }
+        
+        // If zipcode changed, refresh demographic data for COL Index and neighborhood comparison
+        if zipcodeChanged {
+            profileViewModel.verifyZipcode(zipcode)
         }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {

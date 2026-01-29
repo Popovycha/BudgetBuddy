@@ -12,6 +12,7 @@ struct HomeView: View {
     @State private var tempNetIncome: String = ""
     @State private var isEditingIncome = false
     @State private var showCOLInfo = false
+    @State private var showCOLInfoPopup = false
     
     private func calculateTotalExpenses() -> Double {
         let housing = Double(monthlyExpensesViewModel.housing) ?? 0
@@ -375,75 +376,156 @@ struct HomeView: View {
                             
                             // Cost of Living Index
                             if let colIndex = profileViewModel.demographicData?.costOfLivingIndex {
-                                VStack(alignment: .leading, spacing: 12) {
+                                VStack(alignment: .leading, spacing: 16) {
                                     HStack(spacing: 8) {
                                         Image(systemName: "chart.line.uptrend.xyaxis")
-                                            .font(.system(size: 16))
-                                            .foregroundColor(Color(red: 0.50, green: 0.70, blue: 1.0))
+                                            .font(.system(size: 18))
+                                            .foregroundColor(Color(red: 0.15, green: 0.20, blue: 0.35))
                                         
                                         Text("Cost of Living Index")
-                                            .font(.system(size: 14, weight: .semibold))
+                                            .font(.system(size: 16, weight: .bold))
                                             .foregroundColor(.black)
                                         
                                         Spacer()
                                         
-                                        Button(action: { showCOLInfo = true }) {
+                                        Button(action: { showCOLInfoPopup = true }) {
                                             Image(systemName: "info.circle.fill")
-                                                .font(.system(size: 16))
+                                                .font(.system(size: 18))
                                                 .foregroundColor(Color(red: 0.50, green: 0.70, blue: 1.0))
                                         }
                                     }
                                     
-                                    VStack(alignment: .leading, spacing: 12) {
-                                        HStack {
-                                            VStack(alignment: .leading, spacing: 4) {
-                                                Text("Your Area Index")
-                                                    .font(.system(size: 12))
-                                                    .foregroundColor(Color(red: 0.35, green: 0.40, blue: 0.50))
-                                                
-                                                Text(String(format: "%.1f", colIndex))
-                                                    .font(.system(size: 20, weight: .bold))
-                                                    .foregroundColor(Color(red: 0.15, green: 0.20, blue: 0.35))
-                                            }
-                                            
-                                            Spacer()
-                                            
-                                            VStack(alignment: .trailing, spacing: 4) {
-                                                Text("USA Average: 100")
-                                                    .font(.system(size: 11))
-                                                    .foregroundColor(Color(red: 0.35, green: 0.40, blue: 0.50))
-                                                
-                                                let difference = colIndex - 100
-                                                let differenceText = String(format: "%+.1f", difference)
-                                                let differenceColor: Color = difference > 0 ? .red : Color(red: 0.20, green: 0.60, blue: 0.20)
-                                                
-                                                Text(differenceText)
-                                                    .font(.system(size: 16, weight: .bold))
-                                                    .foregroundColor(differenceColor)
-                                            }
-                                        }
-                                        .padding(12)
-                                        .background(Color(red: 0.98, green: 0.96, blue: 0.94))
-                                        .cornerRadius(8)
-                                        
-                                        HStack(spacing: 8) {
-                                            Image(systemName: "info.circle.fill")
+                                    HStack {
+                                        VStack(alignment: .leading, spacing: 4) {
+                                            Text("Your Area Index")
                                                 .font(.system(size: 12))
-                                                .foregroundColor(Color(red: 0.50, green: 0.70, blue: 1.0))
+                                                .foregroundColor(Color(red: 0.35, green: 0.40, blue: 0.50))
                                             
-                                            Text(colIndex > 100 ? "Your area has a higher cost of living than the national average." : "Your area has a lower cost of living than the national average.")
+                                            Text(String(format: "%.1f", colIndex))
+                                                .font(.system(size: 20, weight: .bold))
+                                                .foregroundColor(Color(red: 0.15, green: 0.20, blue: 0.35))
+                                        }
+                                        
+                                        Spacer()
+                                        
+                                        VStack(alignment: .trailing, spacing: 4) {
+                                            Text("USA Average: 100")
                                                 .font(.system(size: 11))
                                                 .foregroundColor(Color(red: 0.35, green: 0.40, blue: 0.50))
-                                                .lineLimit(nil)
+                                            
+                                            let difference = colIndex - 100
+                                            let differenceText = String(format: "%+.1f", difference)
+                                            let differenceColor: Color = difference > 0 ? .red : Color(red: 0.20, green: 0.60, blue: 0.20)
+                                            
+                                            Text(differenceText)
+                                                .font(.system(size: 16, weight: .bold))
+                                                .foregroundColor(differenceColor)
                                         }
+                                    }
+                                    .frame(maxWidth: .infinity)
+                                    .padding(12)
+                                    .background(Color(red: 0.98, green: 0.96, blue: 0.94))
+                                    .cornerRadius(8)
+                                    
+                                    if colIndex > 100 {
+                                        VStack(alignment: .leading, spacing: 8) {
+                                            Text("Why it's higher:")
+                                                .font(.system(size: 12, weight: .semibold))
+                                                .foregroundColor(Color(red: 0.15, green: 0.20, blue: 0.35))
+                                            
+                                            VStack(alignment: .leading, spacing: 6) {
+                                                HStack(spacing: 6) {
+                                                    Image(systemName: "house.fill")
+                                                        .font(.system(size: 11))
+                                                        .frame(width: 14)
+                                                        .foregroundColor(.red)
+                                                    Text("Housing costs are elevated")
+                                                        .font(.system(size: 11))
+                                                        .foregroundColor(Color(red: 0.35, green: 0.40, blue: 0.50))
+                                                }
+                                                
+                                                HStack(spacing: 6) {
+                                                    Image(systemName: "bolt.fill")
+                                                        .font(.system(size: 11))
+                                                        .frame(width: 14)
+                                                        .foregroundColor(.red)
+                                                    Text("Utilities are more expensive")
+                                                        .font(.system(size: 11))
+                                                        .foregroundColor(Color(red: 0.35, green: 0.40, blue: 0.50))
+                                                }
+                                                
+                                                HStack(spacing: 6) {
+                                                    Image(systemName: "cart.fill")
+                                                        .font(.system(size: 11))
+                                                        .frame(width: 14)
+                                                        .foregroundColor(.red)
+                                                    Text("Food and services cost more")
+                                                        .font(.system(size: 11))
+                                                        .foregroundColor(Color(red: 0.35, green: 0.40, blue: 0.50))
+                                                }
+                                            }
+                                        }
+                                        .frame(maxWidth: .infinity, alignment: .leading)
                                         .padding(12)
-                                        .background(Color(red: 0.95, green: 0.98, blue: 1.0))
+                                        .background(Color(red: 1.0, green: 0.95, blue: 0.95))
+                                        .cornerRadius(8)
+                                    } else if colIndex < 100 {
+                                        VStack(alignment: .leading, spacing: 8) {
+                                            Text("Why it's lower:")
+                                                .font(.system(size: 12, weight: .semibold))
+                                                .foregroundColor(Color(red: 0.15, green: 0.20, blue: 0.35))
+                                            
+                                            VStack(alignment: .leading, spacing: 6) {
+                                                HStack(spacing: 6) {
+                                                    Image(systemName: "house.fill")
+                                                        .font(.system(size: 11))
+                                                        .frame(width: 14)
+                                                        .foregroundColor(Color(red: 0.20, green: 0.60, blue: 0.20))
+                                                    Text("Affordable housing market")
+                                                        .font(.system(size: 11))
+                                                        .foregroundColor(Color(red: 0.35, green: 0.40, blue: 0.50))
+                                                }
+                                                
+                                                HStack(spacing: 6) {
+                                                    Image(systemName: "bolt.fill")
+                                                        .font(.system(size: 11))
+                                                        .frame(width: 14)
+                                                        .foregroundColor(Color(red: 0.20, green: 0.60, blue: 0.20))
+                                                    Text("Lower utility rates")
+                                                        .font(.system(size: 11))
+                                                        .foregroundColor(Color(red: 0.35, green: 0.40, blue: 0.50))
+                                                }
+                                                
+                                                HStack(spacing: 6) {
+                                                    Image(systemName: "cart.fill")
+                                                        .font(.system(size: 11))
+                                                        .frame(width: 14)
+                                                        .foregroundColor(Color(red: 0.20, green: 0.60, blue: 0.20))
+                                                    Text("Budget-friendly dining options")
+                                                        .font(.system(size: 11))
+                                                        .foregroundColor(Color(red: 0.35, green: 0.40, blue: 0.50))
+                                                }
+                                            }
+                                        }
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .padding(12)
+                                        .background(Color(red: 0.95, green: 1.0, blue: 0.95))
                                         .cornerRadius(8)
                                     }
+                                    
+                                    Button(action: { showCOLInfo = true }) {
+                                        Text("Show More")
+                                            .font(.system(size: 14, weight: .semibold))
+                                            .frame(maxWidth: .infinity)
+                                            .padding(12)
+                                            .foregroundColor(.white)
+                                            .background(Color(red: 0.15, green: 0.20, blue: 0.35))
+                                            .cornerRadius(12)
+                                    }
                                 }
-                                .padding(16)
+                                .padding(20)
                                 .background(Color.white)
-                                .cornerRadius(12)
+                                .cornerRadius(16)
                             }
                             
                             // AI Analysis Unlock Card
@@ -585,18 +667,97 @@ struct HomeView: View {
                         }
                         .padding(20)
                     }
+                    .disabled(showCOLInfo || showCOLInfoPopup)
                 }
                 
-                // Cost of Living Info Popup (full screen overlay)
+                // Cost of Living Info Popup (Info Button - Definition & Why It's Needed)
+                if showCOLInfoPopup {
+                    ZStack {
+                        Color.black.opacity(0.4)
+                            .ignoresSafeArea()
+                            .transition(.opacity)
+                            .onTapGesture { showCOLInfoPopup = false }
+                        
+                        VStack(alignment: .leading, spacing: 16) {
+                            HStack {
+                                Text("Cost of Living Index")
+                                    .font(.system(size: 16, weight: .bold))
+                                    .foregroundColor(.black)
+                                
+                                Spacer()
+                                
+                                Button(action: { showCOLInfoPopup = false }) {
+                                    Image(systemName: "xmark")
+                                        .font(.system(size: 14, weight: .semibold))
+                                        .foregroundColor(.black)
+                                }
+                            }
+                            
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("What is it?")
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundColor(Color(red: 0.15, green: 0.20, blue: 0.35))
+                                
+                                Text("The Cost of Living Index measures the relative expense of living in a specific area compared to a national baseline. An index of 100 represents the national average.")
+                                    .font(.system(size: 13))
+                                    .foregroundColor(Color(red: 0.35, green: 0.40, blue: 0.50))
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                            
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Why it matters")
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundColor(Color(red: 0.15, green: 0.20, blue: 0.35))
+                                
+                                VStack(alignment: .leading, spacing: 6) {
+                                    HStack(alignment: .top, spacing: 8) {
+                                        Image(systemName: "checkmark.circle.fill")
+                                            .font(.system(size: 12))
+                                            .foregroundColor(Color(red: 0.20, green: 0.60, blue: 0.20))
+                                        Text("Understand your cost of living vs national average")
+                                            .font(.system(size: 13))
+                                            .foregroundColor(Color(red: 0.35, green: 0.40, blue: 0.50))
+                                    }
+                                    
+                                    HStack(alignment: .top, spacing: 8) {
+                                        Image(systemName: "checkmark.circle.fill")
+                                            .font(.system(size: 12))
+                                            .foregroundColor(Color(red: 0.20, green: 0.60, blue: 0.20))
+                                        Text("Make informed budgeting decisions")
+                                            .font(.system(size: 13))
+                                            .foregroundColor(Color(red: 0.35, green: 0.40, blue: 0.50))
+                                    }
+                                    
+                                    HStack(alignment: .top, spacing: 8) {
+                                        Image(systemName: "checkmark.circle.fill")
+                                            .font(.system(size: 12))
+                                            .foregroundColor(Color(red: 0.20, green: 0.60, blue: 0.20))
+                                        Text("Identify cost drivers in your area")
+                                            .font(.system(size: 13))
+                                            .foregroundColor(Color(red: 0.35, green: 0.40, blue: 0.50))
+                                    }
+                                }
+                            }
+                        }
+                        .padding(20)
+                        .background(Color.white)
+                        .cornerRadius(16)
+                        .padding(30)
+                        .transition(.scale(scale: 0.8).combined(with: .opacity))
+                    }
+                    .animation(.easeInOut(duration: 0.3), value: showCOLInfoPopup)
+                }
+                
+                // Cost of Living Detailed Popup (Show More - Comparison & Drivers)
                 if showCOLInfo {
                     ZStack {
                         Color.black.opacity(0.4)
                             .ignoresSafeArea()
                             .transition(.opacity)
                         
-                        VStack(alignment: .leading, spacing: 16) {
+                        VStack(alignment: .leading, spacing: 0) {
                             HStack {
-                                Text("What is Cost of Living Index?")
+                                Text("Cost Comparison")
                                     .font(.system(size: 16, weight: .bold))
                                     .foregroundColor(.black)
                                 
@@ -608,200 +769,191 @@ struct HomeView: View {
                                         .foregroundColor(.black)
                                 }
                             }
+                            .padding(20)
                             
-                            VStack(alignment: .leading, spacing: 12) {
-                                Text("Definition")
-                                    .font(.system(size: 13, weight: .semibold))
-                                    .foregroundColor(Color(red: 0.15, green: 0.20, blue: 0.35))
-                                
-                                Text("The Cost of Living Index measures the relative expense of living in a specific area compared to a national baseline. An index of 100 represents the national average.")
-                                    .font(.system(size: 12))
-                                    .foregroundColor(Color(red: 0.35, green: 0.40, blue: 0.50))
-                                    .lineLimit(nil)
-                            }
-                            
-                            VStack(alignment: .leading, spacing: 12) {
-                                Text("Nationwide Average Breakdown")
-                                    .font(.system(size: 13, weight: .semibold))
-                                    .foregroundColor(Color(red: 0.15, green: 0.20, blue: 0.35))
-                                
-                                VStack(alignment: .leading, spacing: 10) {
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        HStack {
-                                            VStack(alignment: .leading, spacing: 2) {
-                                                Text("Housing (28%)")
-                                                    .font(.system(size: 12, weight: .semibold))
-                                                    .foregroundColor(Color(red: 0.15, green: 0.20, blue: 0.35))
-                                                Text("Rent, property prices, home maintenance")
-                                                    .font(.system(size: 10))
-                                                    .foregroundColor(Color(red: 0.35, green: 0.40, blue: 0.50))
-                                            }
-                                            Spacer()
-                                            Text("$1,400/mo")
-                                                .font(.system(size: 12, weight: .semibold))
+                            ScrollView {
+                                VStack(alignment: .leading, spacing: 16) {
+                                    if let colIndex = profileViewModel.demographicData?.costOfLivingIndex {
+                                        VStack(alignment: .leading, spacing: 12) {
+                                            Text("National Average")
+                                                .font(.system(size: 13, weight: .semibold))
                                                 .foregroundColor(Color(red: 0.15, green: 0.20, blue: 0.35))
-                                        }
-                                    }
-                                    .padding(10)
-                                    .background(Color(red: 0.98, green: 0.96, blue: 0.94))
-                                    .cornerRadius(6)
-                                    
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        HStack {
-                                            VStack(alignment: .leading, spacing: 2) {
-                                                Text("Groceries & Food (12%)")
-                                                    .font(.system(size: 12, weight: .semibold))
-                                                    .foregroundColor(Color(red: 0.15, green: 0.20, blue: 0.35))
-                                                Text("Supermarket items, restaurant prices")
-                                                    .font(.system(size: 10))
-                                                    .foregroundColor(Color(red: 0.35, green: 0.40, blue: 0.50))
-                                            }
-                                            Spacer()
-                                            Text("$600/mo")
-                                                .font(.system(size: 12, weight: .semibold))
-                                                .foregroundColor(Color(red: 0.15, green: 0.20, blue: 0.35))
-                                        }
-                                    }
-                                    .padding(10)
-                                    .background(Color(red: 0.98, green: 0.96, blue: 0.94))
-                                    .cornerRadius(6)
-                                    
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        HStack {
-                                            VStack(alignment: .leading, spacing: 2) {
-                                                Text("Transportation (9%)")
-                                                    .font(.system(size: 12, weight: .semibold))
-                                                    .foregroundColor(Color(red: 0.15, green: 0.20, blue: 0.35))
-                                                Text("Gas, public transit, car insurance, maintenance")
-                                                    .font(.system(size: 10))
-                                                    .foregroundColor(Color(red: 0.35, green: 0.40, blue: 0.50))
-                                            }
-                                            Spacer()
-                                            Text("$450/mo")
-                                                .font(.system(size: 12, weight: .semibold))
-                                                .foregroundColor(Color(red: 0.15, green: 0.20, blue: 0.35))
-                                        }
-                                    }
-                                    .padding(10)
-                                    .background(Color(red: 0.98, green: 0.96, blue: 0.94))
-                                    .cornerRadius(6)
-                                    
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        HStack {
-                                            VStack(alignment: .leading, spacing: 2) {
-                                                Text("Utilities (8%)")
-                                                    .font(.system(size: 12, weight: .semibold))
-                                                    .foregroundColor(Color(red: 0.15, green: 0.20, blue: 0.35))
-                                                Text("Electricity, water, gas, internet, phone")
-                                                    .font(.system(size: 10))
-                                                    .foregroundColor(Color(red: 0.35, green: 0.40, blue: 0.50))
-                                            }
-                                            Spacer()
-                                            Text("$400/mo")
-                                                .font(.system(size: 12, weight: .semibold))
-                                                .foregroundColor(Color(red: 0.15, green: 0.20, blue: 0.35))
-                                        }
-                                    }
-                                    .padding(10)
-                                    .background(Color(red: 0.98, green: 0.96, blue: 0.94))
-                                    .cornerRadius(6)
-                                    
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        HStack {
-                                            VStack(alignment: .leading, spacing: 2) {
-                                                Text("Healthcare (5%)")
-                                                    .font(.system(size: 12, weight: .semibold))
-                                                    .foregroundColor(Color(red: 0.15, green: 0.20, blue: 0.35))
-                                                Text("Doctor visits, prescriptions, insurance")
-                                                    .font(.system(size: 10))
-                                                    .foregroundColor(Color(red: 0.35, green: 0.40, blue: 0.50))
-                                            }
-                                            Spacer()
-                                            Text("$250/mo")
-                                                .font(.system(size: 12, weight: .semibold))
-                                                .foregroundColor(Color(red: 0.15, green: 0.20, blue: 0.35))
-                                        }
-                                    }
-                                    .padding(10)
-                                    .background(Color(red: 0.98, green: 0.96, blue: 0.94))
-                                    .cornerRadius(6)
-                                }
-                            }
-                            
-                            if let colIndex = profileViewModel.demographicData?.costOfLivingIndex, colIndex > 100 {
-                                VStack(alignment: .leading, spacing: 12) {
-                                    Text("What's Higher in Your Area")
-                                        .font(.system(size: 13, weight: .semibold))
-                                        .foregroundColor(Color(red: 0.15, green: 0.20, blue: 0.35))
-                                    
-                                    let difference = colIndex - 100
-                                    let percentageHigher = String(format: "%.1f", difference)
-                                    
-                                    VStack(alignment: .leading, spacing: 8) {
-                                        HStack(spacing: 8) {
-                                            Image(systemName: "arrow.up.right")
-                                                .font(.system(size: 12, weight: .semibold))
-                                                .foregroundColor(.red)
                                             
-                                            VStack(alignment: .leading, spacing: 2) {
-                                                Text("Your area is \(percentageHigher)% higher than national average")
-                                                    .font(.system(size: 12, weight: .semibold))
-                                                    .foregroundColor(Color(red: 0.15, green: 0.20, blue: 0.35))
+                                            VStack(alignment: .leading, spacing: 10) {
+                                                HStack {
+                                                    VStack(alignment: .leading, spacing: 2) {
+                                                        Text("Housing (28%)")
+                                                            .font(.system(size: 12, weight: .semibold))
+                                                            .foregroundColor(Color(red: 0.15, green: 0.20, blue: 0.35))
+                                                        Text("Rent, property prices, home maintenance")
+                                                            .font(.system(size: 10))
+                                                            .foregroundColor(Color(red: 0.35, green: 0.40, blue: 0.50))
+                                                    }
+                                                    Spacer()
+                                                    Text("$1,400/mo")
+                                                        .font(.system(size: 12, weight: .semibold))
+                                                        .foregroundColor(Color(red: 0.15, green: 0.20, blue: 0.35))
+                                                }
+                                                .padding(10)
+                                                .background(Color(red: 0.98, green: 0.96, blue: 0.94))
+                                                .cornerRadius(6)
                                                 
-                                                Text("Primary drivers: Housing and utilities typically cost more in high-cost areas")
-                                                    .font(.system(size: 11))
-                                                    .foregroundColor(Color(red: 0.35, green: 0.40, blue: 0.50))
+                                                HStack {
+                                                    VStack(alignment: .leading, spacing: 2) {
+                                                        Text("Groceries & Food (12%)")
+                                                            .font(.system(size: 12, weight: .semibold))
+                                                            .foregroundColor(Color(red: 0.15, green: 0.20, blue: 0.35))
+                                                        Text("Supermarket items, restaurant prices")
+                                                            .font(.system(size: 10))
+                                                            .foregroundColor(Color(red: 0.35, green: 0.40, blue: 0.50))
+                                                    }
+                                                    Spacer()
+                                                    Text("$600/mo")
+                                                        .font(.system(size: 12, weight: .semibold))
+                                                        .foregroundColor(Color(red: 0.15, green: 0.20, blue: 0.35))
+                                                }
+                                                .padding(10)
+                                                .background(Color(red: 0.98, green: 0.96, blue: 0.94))
+                                                .cornerRadius(6)
+                                                
+                                                HStack {
+                                                    VStack(alignment: .leading, spacing: 2) {
+                                                        Text("Transportation (9%)")
+                                                            .font(.system(size: 12, weight: .semibold))
+                                                            .foregroundColor(Color(red: 0.15, green: 0.20, blue: 0.35))
+                                                        Text("Gas, public transit, car insurance, maintenance")
+                                                            .font(.system(size: 10))
+                                                            .foregroundColor(Color(red: 0.35, green: 0.40, blue: 0.50))
+                                                    }
+                                                    Spacer()
+                                                    Text("$450/mo")
+                                                        .font(.system(size: 12, weight: .semibold))
+                                                        .foregroundColor(Color(red: 0.15, green: 0.20, blue: 0.35))
+                                                }
+                                                .padding(10)
+                                                .background(Color(red: 0.98, green: 0.96, blue: 0.94))
+                                                .cornerRadius(6)
+                                                
+                                                HStack {
+                                                    VStack(alignment: .leading, spacing: 2) {
+                                                        Text("Utilities (8%)")
+                                                            .font(.system(size: 12, weight: .semibold))
+                                                            .foregroundColor(Color(red: 0.15, green: 0.20, blue: 0.35))
+                                                        Text("Electricity, water, gas, internet, phone")
+                                                            .font(.system(size: 10))
+                                                            .foregroundColor(Color(red: 0.35, green: 0.40, blue: 0.50))
+                                                    }
+                                                    Spacer()
+                                                    Text("$400/mo")
+                                                        .font(.system(size: 12, weight: .semibold))
+                                                        .foregroundColor(Color(red: 0.15, green: 0.20, blue: 0.35))
+                                                }
+                                                .padding(10)
+                                                .background(Color(red: 0.98, green: 0.96, blue: 0.94))
+                                                .cornerRadius(6)
+                                                
+                                                HStack {
+                                                    VStack(alignment: .leading, spacing: 2) {
+                                                        Text("Healthcare (5%)")
+                                                            .font(.system(size: 12, weight: .semibold))
+                                                            .foregroundColor(Color(red: 0.15, green: 0.20, blue: 0.35))
+                                                        Text("Doctor visits, prescriptions, insurance")
+                                                            .font(.system(size: 10))
+                                                            .foregroundColor(Color(red: 0.35, green: 0.40, blue: 0.50))
+                                                    }
+                                                    Spacer()
+                                                    Text("$250/mo")
+                                                        .font(.system(size: 12, weight: .semibold))
+                                                        .foregroundColor(Color(red: 0.15, green: 0.20, blue: 0.35))
+                                                }
+                                                .padding(10)
+                                                .background(Color(red: 0.98, green: 0.96, blue: 0.94))
+                                                .cornerRadius(6)
                                             }
                                         }
-                                        .padding(10)
-                                        .background(Color(red: 1.0, green: 0.95, blue: 0.95))
-                                        .cornerRadius(6)
+                                        
+                                        VStack(alignment: .leading, spacing: 12) {
+                                            Text("Primary Drivers")
+                                                .font(.system(size: 13, weight: .semibold))
+                                                .foregroundColor(Color(red: 0.15, green: 0.20, blue: 0.35))
+                                            
+                                            let difference = colIndex - 100
+                                            let multiplier = colIndex / 100
+                                            let isHigher = colIndex > 100
+                                            let accentColor: Color = isHigher ? .red : Color(red: 0.20, green: 0.60, blue: 0.20)
+                                            let bgColor: Color = isHigher ? Color(red: 1.0, green: 0.95, blue: 0.95) : Color(red: 0.95, green: 1.0, blue: 0.95)
+                                            
+                                            VStack(alignment: .leading, spacing: 10) {
+                                                HStack {
+                                                    HStack(spacing: 6) {
+                                                        Image(systemName: "house.fill")
+                                                            .font(.system(size: 11))
+                                                            .foregroundColor(accentColor)
+                                                        Text("Housing")
+                                                            .font(.system(size: 12, weight: .semibold))
+                                                            .foregroundColor(Color(red: 0.15, green: 0.20, blue: 0.35))
+                                                    }
+                                                    Spacer()
+                                                    Text("$\(Int(1400 * multiplier))/mo")
+                                                        .font(.system(size: 12, weight: .semibold))
+                                                        .foregroundColor(accentColor)
+                                                    Text(String(format: "(%+.0f%%)", difference * 0.28))
+                                                        .font(.system(size: 10))
+                                                        .foregroundColor(accentColor)
+                                                }
+                                                .padding(10)
+                                                .background(bgColor)
+                                                .cornerRadius(6)
+                                                
+                                                HStack {
+                                                    HStack(spacing: 6) {
+                                                        Image(systemName: "cart.fill")
+                                                            .font(.system(size: 11))
+                                                            .foregroundColor(accentColor)
+                                                        Text("Groceries")
+                                                            .font(.system(size: 12, weight: .semibold))
+                                                            .foregroundColor(Color(red: 0.15, green: 0.20, blue: 0.35))
+                                                    }
+                                                    Spacer()
+                                                    Text("$\(Int(600 * multiplier))/mo")
+                                                        .font(.system(size: 12, weight: .semibold))
+                                                        .foregroundColor(accentColor)
+                                                    Text(String(format: "(%+.0f%%)", difference * 0.12))
+                                                        .font(.system(size: 10))
+                                                        .foregroundColor(accentColor)
+                                                }
+                                                .padding(10)
+                                                .background(bgColor)
+                                                .cornerRadius(6)
+                                                
+                                                HStack {
+                                                    HStack(spacing: 6) {
+                                                        Image(systemName: "bolt.fill")
+                                                            .font(.system(size: 11))
+                                                            .foregroundColor(accentColor)
+                                                        Text("Utilities")
+                                                            .font(.system(size: 12, weight: .semibold))
+                                                            .foregroundColor(Color(red: 0.15, green: 0.20, blue: 0.35))
+                                                    }
+                                                    Spacer()
+                                                    Text("$\(Int(400 * multiplier))/mo")
+                                                        .font(.system(size: 12, weight: .semibold))
+                                                        .foregroundColor(accentColor)
+                                                    Text(String(format: "(%+.0f%%)", difference * 0.08))
+                                                        .font(.system(size: 10))
+                                                        .foregroundColor(accentColor)
+                                                }
+                                                .padding(10)
+                                                .background(bgColor)
+                                                .cornerRadius(6)
+                                            }
+                                        }
                                     }
                                 }
+                                .padding(20)
                             }
-                            
-                            VStack(alignment: .leading, spacing: 12) {
-                                Text("How to Interpret")
-                                    .font(.system(size: 13, weight: .semibold))
-                                    .foregroundColor(Color(red: 0.15, green: 0.20, blue: 0.35))
-                                
-                                HStack(spacing: 8) {
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text("Index > 100")
-                                            .font(.system(size: 12, weight: .semibold))
-                                            .foregroundColor(.red)
-                                        Text("Higher than average")
-                                            .font(.system(size: 11))
-                                            .foregroundColor(Color(red: 0.35, green: 0.40, blue: 0.50))
-                                    }
-                                    
-                                    Spacer()
-                                    
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text("Index = 100")
-                                            .font(.system(size: 12, weight: .semibold))
-                                            .foregroundColor(Color(red: 0.95, green: 0.70, blue: 0.65))
-                                        Text("National average")
-                                            .font(.system(size: 11))
-                                            .foregroundColor(Color(red: 0.35, green: 0.40, blue: 0.50))
-                                    }
-                                    
-                                    Spacer()
-                                    
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text("Index < 100")
-                                            .font(.system(size: 12, weight: .semibold))
-                                            .foregroundColor(Color(red: 0.20, green: 0.60, blue: 0.20))
-                                        Text("Lower than average")
-                                            .font(.system(size: 11))
-                                            .foregroundColor(Color(red: 0.35, green: 0.40, blue: 0.50))
-                                    }
-                                }
-                            }
-                            
-                            Spacer()
+                            .frame(maxHeight: 500)
                         }
-                        .padding(20)
                         .background(Color.white)
                         .cornerRadius(16)
                         .padding(20)
